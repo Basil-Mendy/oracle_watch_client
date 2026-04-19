@@ -4,6 +4,6 @@
  */
 
 export const getApiUrl = (endpoint) => {
-    const apiBaseUrl = process.env.REACT_APP_API_URL || `${window.location.protocol}//${window.location.hostname}:8000/api`;
+    const apiBaseUrl = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:8000/api`;
     return `${apiBaseUrl}${endpoint}`;
 };

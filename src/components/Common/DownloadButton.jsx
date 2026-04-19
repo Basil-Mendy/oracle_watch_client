@@ -23,7 +23,7 @@ const DownloadButton = ({
                 : `/results/download-video/${item.id}/`;
 
             // Fetch the file
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}${endpoint}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${endpoint}`);
 
             if (!response.ok) {
                 throw new Error(`Download failed: ${response.statusText}`);
