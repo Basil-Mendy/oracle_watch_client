@@ -1,0 +1,183 @@
+/**
+ * PollingUnitSuccessModal Styles
+ */
+
+.success-modal {
+    animation: slideIn 0.3s ease-out;
+}
+
+.success-header {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    color: white;
+    border-bottom: 3px solid #1e8449;
+}
+
+.success-header h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.success-warning {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 12px;
+    margin-bottom: 24px;
+    border-radius: 4px;
+    color: #856404;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.credentials-container {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.credential-field {
+    margin-bottom: 16px;
+}
+
+.credential-field:last-of-type {
+    margin-bottom: 0;
+}
+
+.credential-field label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.credential-value {
+    background-color: white;
+    border: 1px solid #ddd;
+    padding: 10px 12px;
+    border-radius: 4px;
+    color: #2c3e50;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+.password-display-success {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.password-code {
+    flex: 1;
+    background-color: white;
+    border: 2px solid #3498db;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: #2c3e50;
+    letter-spacing: 1px;
+    word-break: break-all;
+}
+
+.btn-copy {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-copy:hover {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+}
+
+.btn-copy:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(52, 152, 219, 0.3);
+}
+
+.ward-lga .credential-value {
+    font-size: 13px;
+    color: #555;
+}
+
+.next-steps {
+    background-color: #ecf0f1;
+    padding: 16px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.next-steps h4 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+    font-size: 13px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.next-steps ol {
+    margin: 0;
+    padding-left: 20px;
+    color: #555;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.next-steps li {
+    margin-bottom: 8px;
+}
+
+.next-steps li:last-child {
+    margin-bottom: 0;
+}
+
+/* Animation */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .password-display-success {
+        flex-direction: column;
+    }
+
+    .btn-copy {
+        width: 100%;
+    }
+
+    .credentials-container {
+        padding: 16px;
+    }
+
+    .next-steps {
+        padding: 12px;
+    }
+
+    .success-warning {
+        font-size: 13px;
+    }
+}

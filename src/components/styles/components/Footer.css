@@ -1,0 +1,38 @@
+/* Footer Styles */
+
+.footer {
+    background-color: var(--neutral-900);
+    color: white;
+    padding: 1rem 0;
+    margin-top: 4rem;
+    border-top: 2px solid var(--primary-main);
+}
+
+.footer .container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Footer Bottom */
+.footer-bottom {
+    text-align: center;
+}
+
+.footer-bottom p {
+    font-size: 0.85rem;
+    color: var(--neutral-400);
+    margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .footer {
+        padding: 0.75rem 0;
+        margin-top: 3rem;
+    }
+
+    .footer-bottom p {
+        font-size: 0.8rem;
+    }
+}
