@@ -7,8 +7,8 @@ import axios from 'axios';
 
 // ✅ BASE URL INCLUDES /api (IMPORTANT)
 const API_BASE_URL =
-    import.meta.env.VITE_API_BASE_URL ||
-    'https://oraclewatchserver-production.up.railway.app/api';
+    import.meta.env.VITE_API_URL ||
+    'http://localhost:8000/api';
 
 // 🔍 Debug
 console.log("🚀 API BASE URL:", API_BASE_URL);
