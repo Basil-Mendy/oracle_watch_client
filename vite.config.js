@@ -5,13 +5,13 @@ export default defineConfig({
     plugins: [react()],
     server: {
         port: 3000,
-        host: true,
+        host: true, // Allows access on your local network
     },
     build: {
         outDir: 'dist',
         sourcemap: false,
         minify: 'esbuild',
-        assetsDir: 'assets',
+        assetsDir: 'assets', // Keeps your JS/CSS organized
     },
     esbuild: {
         loader: 'jsx',
@@ -27,6 +27,7 @@ export default defineConfig({
         },
     },
     define: {
-        'process.env': process.env,
+        // Safe way to pass environment variables to libraries that expect process.env
+        'process.env': {}, 
     },
 });
