@@ -5,12 +5,12 @@
 
 import axios from 'axios';
 
-// ✅ CLEAN BASE URL (NO /api HERE)
+// ✅ BASE URL INCLUDES /api (IMPORTANT)
 const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ||
-    'https://oraclewatchserver-production.up.railway.app';
+    'https://oraclewatchserver-production.up.railway.app/api';
 
-// 🔍 Debug (remove later if you want)
+// 🔍 Debug
 console.log("🚀 API BASE URL:", API_BASE_URL);
 
 // Create axios instance
@@ -30,8 +30,11 @@ api.interceptors.request.use(
             config.headers.Authorization = `Token ${token}`;
         }
 
-        // 🔍 Debug request
-        console.log("📡 Request:", config.method?.toUpperCase(), config.baseURL + config.url);
+        console.log(
+            "📡 Request:",
+            config.method?.toUpperCase(),
+            config.baseURL + config.url
+        );
 
         return config;
     },
