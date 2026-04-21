@@ -1,14 +1,19 @@
 /**
  * API Service - Central place for all HTTP requests
- * This file handles communication with the Django backend
+ * Handles communication with Django backend
  */
 
 import axios from 'axios';
 
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://oraclewatchserver-production.up.railway.app/api';
+// ✅ CLEAN BASE URL (NO /api HERE)
+const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL ||
+    'https://oraclewatchserver-production.up.railway.app';
 
-// Create axios instance with default config
+// 🔍 Debug (remove later if you want)
+console.log("🚀 API BASE URL:", API_BASE_URL);
+
+// Create axios instance
 const api = axios.create({
     baseURL: API_BASE_URL,
     headers: {
@@ -16,26 +21,33 @@ const api = axios.create({
     },
 });
 
-// Add auth token to requests if it exists
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        config.headers.Authorization = `Token ${token}`;
-    }
-    return config;
-});
+// 🔐 Attach auth token if available
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('auth_token');
 
-// Handle errors globally
+        if (token) {
+            config.headers.Authorization = `Token ${token}`;
+        }
+
+        // 🔍 Debug request
+        console.log("📡 Request:", config.method?.toUpperCase(), config.baseURL + config.url);
+
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// 🌍 Global error handling
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        console.error("❌ API Error:", error.response || error.message);
+
         if (error.response?.status === 401) {
-            // Only logout on 401 for specific endpoints that require authentication
-            // Don't logout for GET requests to endpoints that might not require auth
             const method = error.config?.method?.toUpperCase();
             const url = error.config?.url || '';
 
-            // Only logout if it's a POST/PUT/DELETE or login endpoint
             const shouldLogout =
                 method !== 'GET' ||
                 url.includes('login') ||
@@ -47,6 +59,7 @@ api.interceptors.response.use(
                 window.location.href = '/login';
             }
         }
+
         return Promise.reject(error);
     }
 );
