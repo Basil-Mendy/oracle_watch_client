@@ -93,7 +93,7 @@ const WardForm = () => {
                 try {
                     await locationService.createWard({
                         name: wardName,
-                        lga: formData.lga_id
+                        lga_id: formData.lga_id  // ✅ Fixed: was "lga"
                     });
                     successCount++;
                 } catch (err) {

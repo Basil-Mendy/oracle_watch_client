@@ -128,8 +128,8 @@ const PollingUnitForm = () => {
             // Create units array with parsed names
             const units = names.map(name => ({
                 name: name,
-                lga: formData.lga_id,
-                ward: formData.ward_id,
+                lga_id: formData.lga_id,    // ✅ Fixed: was "lga"
+                ward_id: formData.ward_id,  // ✅ Fixed: was "ward"
             }));
 
             await locationService.bulkCreatePollingUnits({}, units);
