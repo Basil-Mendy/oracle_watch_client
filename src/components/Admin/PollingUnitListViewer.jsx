@@ -25,42 +25,36 @@ const PollingUnitListViewer = () => {
 
     const loadLGAs = async () => {
         try {
-            console.log('Loading LGAs...');
             const response = await locationService.getLGAs();
-            console.log('LGAs API response:', response);
             let lgaData = response.data;
             if (Array.isArray(lgaData)) {
-                console.log('LGAs response is array, count:', lgaData.length);
+                // Direct array response
             } else if (lgaData?.results) {
                 lgaData = lgaData.results;
-                console.log('LGAs response is paginated, count:', lgaData.length);
             } else {
                 lgaData = [];
             }
             setLGAs(Array.isArray(lgaData) ? lgaData : []);
         } catch (err) {
-            console.error('Error loading LGAs:', err);
+            console.error('Failed to load LGAs:', err.message);
             setLGAs([]);
         }
     };
 
     const loadWards = async (lgaId) => {
         try {
-            console.log('Loading wards for LGA:', lgaId);
             const response = await locationService.getWards(lgaId);
-            console.log('Wards API response:', response);
             let wardData = response.data;
             if (Array.isArray(wardData)) {
-                console.log('Wards response is array, count:', wardData.length);
+                // Direct array response
             } else if (wardData?.results) {
                 wardData = wardData.results;
-                console.log('Wards response is paginated, count:', wardData.length);
             } else {
                 wardData = [];
             }
             setWards(Array.isArray(wardData) ? wardData : []);
         } catch (err) {
-            console.error('Error loading wards:', err);
+            console.error('Failed to load wards:', err.message);
             setWards([]);
         }
     };
@@ -69,24 +63,19 @@ const PollingUnitListViewer = () => {
         setLoading(true);
         setError('');
         try {
-            console.log('Loading polling units with lgaId:', lgaId, 'wardId:', wardId);
             const response = await locationService.getPollingUnits(lgaId, wardId);
-            console.log('Polling units API response:', response);
             let unitData = response.data;
             if (Array.isArray(unitData)) {
-                console.log('Response is direct array, units count:', unitData.length);
+                // Direct array response
             } else if (unitData?.results) {
                 unitData = unitData.results;
-                console.log('Response is paginated, units count:', unitData.length);
             } else {
-                console.log('Response format unexpected:', unitData);
                 unitData = [];
             }
-            console.log('Final polling units to set:', unitData);
             setPollingUnits(Array.isArray(unitData) ? unitData : []);
         } catch (err) {
-            console.error('Error loading polling units:', err);
-            setError('Failed to load polling units: ' + (err.message || 'Unknown error'));
+            console.error('Failed to load polling units:', err.message);
+            setError('Failed to load polling units. Please check your connection and try again.');
             setPollingUnits([]);
         } finally {
             setLoading(false);
