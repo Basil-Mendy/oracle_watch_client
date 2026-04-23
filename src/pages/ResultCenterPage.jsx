@@ -217,7 +217,7 @@ const ResultCenterPage = () => {
   const fetchResults = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/results/?election=${electionId}&level=state`);
+      const res = await fetch(getApiUrl(`/results/?election=${electionId}&level=state`));
       const data = await res.json();
       if (!data.error) {
         // Transform state-level data - use real backend values
@@ -260,7 +260,7 @@ const ResultCenterPage = () => {
 
       if (lgaId && electionId) {
         // Fetch wards for a specific LGA with result data
-        const url = `http://localhost:8000/api/results/?election=${electionId}&level=ward&lga=${lgaId}`;
+        const url = getApiUrl(`/results/?election=${electionId}&level=ward&lga=${lgaId}`);
         const res = await fetch(url);
         const data = await res.json();
 
@@ -272,13 +272,13 @@ const ResultCenterPage = () => {
         // This is a one-time fetch that happens on mount
         try {
           // First get all LGAs
-          const lgaRes = await fetch(`http://localhost:8000/api/locations/lgas/`);
+          const lgaRes = await fetch(getApiUrl('/locations/lgas/'));
           const lgas = await lgaRes.json();
 
           // Then fetch wards for each LGA
           for (const lga of (Array.isArray(lgas) ? lgas : lgas.results || [])) {
             try {
-              const wardUrl = `http://localhost:8000/api/results/?election=${electionId}&level=ward&lga=${lga.id}`;
+              const wardUrl = getApiUrl(`/results/?election=${electionId}&level=ward&lga=${lga.id}`);
               const wardRes = await fetch(wardUrl);
               const wardData = await wardRes.json();
 
@@ -306,7 +306,7 @@ const ResultCenterPage = () => {
 
   const fetchPUWards = useCallback(async (lgaId = '') => {
     try {
-      const url = `http://localhost:8000/api/locations/wards/?lga=${lgaId}`;
+      const url = getApiUrl(`/locations/wards/?lga=${lgaId}`);
       const res = await fetch(url);
       const data = await res.json();
       setPUWards(Array.isArray(data) ? data : data.wards || []);
@@ -323,7 +323,7 @@ const ResultCenterPage = () => {
 
       if (wardId && electionId) {
         // Fetch polling units for a specific ward with result data
-        const url = `http://localhost:8000/api/results/?election=${electionId}&level=polling_unit&ward=${wardId}`;
+        const url = getApiUrl(`/results/?election=${electionId}&level=polling_unit&ward=${wardId}`);
         const res = await fetch(url);
         const data = await res.json();
 
@@ -337,7 +337,7 @@ const ResultCenterPage = () => {
 
         for (const ward of wardsWithResults) {
           try {
-            const puUrl = `http://localhost:8000/api/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`;
+            const puUrl = getApiUrl(`/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`);
             const puRes = await fetch(puUrl);
             const puData = await puRes.json();
 

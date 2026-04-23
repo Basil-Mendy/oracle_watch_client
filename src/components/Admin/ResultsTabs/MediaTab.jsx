@@ -74,7 +74,7 @@ const MediaTab = ({ electionId }) => {
             const token = localStorage.getItem('auth_token');
 
             // Fetch images
-            const imagesResponse = await fetch(`http://localhost:8000/api/results/admin/images/?election_id=${electionId}`, {
+            const imagesResponse = await fetch(getApiUrl(`/results/admin/images/?election_id=${electionId}`), {
                 headers: {
                     'Authorization': `Token ${token}`,
                     'Content-Type': 'application/json'
@@ -89,7 +89,7 @@ const MediaTab = ({ electionId }) => {
             setImages(imagesData.images || []);
 
             // Fetch comments
-            const commentsResponse = await fetch(`http://localhost:8000/api/results/admin/comments/?election_id=${electionId}`, {
+            const commentsResponse = await fetch(getApiUrl(`/results/admin/comments/?election_id=${electionId}`), {
                 headers: {
                     'Authorization': `Token ${token}`,
                     'Content-Type': 'application/json'

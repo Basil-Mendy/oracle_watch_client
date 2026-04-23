@@ -5,6 +5,7 @@
  */
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { getApiUrl } from '../../../utils/apiUrl';
 import locationService from '../../../services/locationService';
 import '../../../styles/components/ResultsTabs.css';
 
@@ -89,7 +90,7 @@ const VoteCountsTab = ({ electionId }) => {
             const allWardsWithResults = [];
             for (const lga of allLGAs) {
                 const response = await fetch(
-                    `http://localhost:8000/api/results/?election=${electionId}&level=ward&lga=${lga.id}`,
+                    getApiUrl(`/results/?election=${electionId}&level=ward&lga=${lga.id}`),
                     { headers: { 'Content-Type': 'application/json' } }
                 );
                 if (response.ok) {
@@ -123,7 +124,7 @@ const VoteCountsTab = ({ electionId }) => {
                 console.log('📍 Using fetched wards');
                 for (const ward of allFetchedWards) {
                     const response = await fetch(
-                        `http://localhost:8000/api/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`,
+                        getApiUrl(`/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`),
                         { headers: { 'Content-Type': 'application/json' } }
                     );
                     if (response.ok) {
@@ -143,7 +144,7 @@ const VoteCountsTab = ({ electionId }) => {
                 try {
                     for (const lga of allLGAs) {
                         const wardResponse = await fetch(
-                            `http://localhost:8000/api/locations/wards/?lga=${lga.id}`,
+                            getApiUrl(`/locations/wards/?lga=${lga.id}`),
                             { headers: { 'Content-Type': 'application/json' } }
                         );
                         if (wardResponse.ok) {
@@ -154,7 +155,7 @@ const VoteCountsTab = ({ electionId }) => {
                             // Now fetch polling units for each ward
                             for (const ward of wardsList) {
                                 const puResponse = await fetch(
-                                    `http://localhost:8000/api/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`,
+                                    getApiUrl(`/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`),
                                     { headers: { 'Content-Type': 'application/json' } }
                                 );
                                 if (puResponse.ok) {

@@ -72,7 +72,7 @@ const LiveVideosTab = ({ electionId }) => {
         setError('');
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch(`http://localhost:8000/api/results/admin/videos/?election_id=${electionId}`, {
+            const response = await fetch(getApiUrl(`/results/admin/videos/?election_id=${electionId}`), {
                 headers: {
                     'Authorization': `Token ${token}`,
                     'Content-Type': 'application/json'
