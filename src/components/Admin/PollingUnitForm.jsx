@@ -180,9 +180,20 @@ const PollingUnitForm = () => {
 
             const response = await locationService.bulkCreateFromExcel(formDataToSend);
 
+            // Access the data from the Axios response object
+            const { created_count, failed_count, errors } = response.data;
+
+            console.log(`✅ Excel Upload Success: Created ${created_count} units, ${failed_count} failed`);
+            if (errors.length > 0) {
+                console.log('Failed rows:');
+                errors.forEach(err => {
+                    console.log(`  Row ${err.row}: ${err.error}`);
+                });
+            }
+
             setMessage({
                 type: 'success',
-                text: `Successfully created ${response.created_count} polling units from Excel file!`
+                text: `Successfully created ${created_count} polling units from Excel file!${failed_count > 0 ? ` (${failed_count} rows failed)` : ''}`
             });
 
             setExcelFile(null);
@@ -191,11 +202,14 @@ const PollingUnitForm = () => {
             // Reset the file input
             const fileInput = document.getElementById('excel-file-input');
             if (fileInput) fileInput.value = '';
+
+            // Reload polling units to show new ones
+            loadWards(null);
         } catch (error) {
             console.error('Error uploading Excel:', error);
             setMessage({
                 type: 'error',
-                text: error.response?.data?.detail || 'Failed to process Excel file'
+                text: error.response?.data?.error || error.response?.data?.detail || 'Failed to process Excel file'
             });
         } finally {
             setLoading(false);

@@ -59,7 +59,12 @@ export const AuthProvider = ({ children }) => {
 
             return userData;
         } catch (error) {
-            throw new Error(error.response?.data?.detail || 'Admin login failed');
+            // Handle both backend error formats: {"error": "..."} and {"detail": "..."}
+            const errorMessage = error.response?.data?.detail ||
+                error.response?.data?.error ||
+                error.message ||
+                'Admin login failed';
+            throw new Error(errorMessage);
         }
     };
 
@@ -95,7 +100,12 @@ export const AuthProvider = ({ children }) => {
 
             return pollingUnitUser;
         } catch (error) {
-            throw new Error(error.response?.data?.detail || 'Polling unit login failed');
+            // Handle both backend error formats: {"error": "..."} and {"detail": "..."}
+            const errorMessage = error.response?.data?.detail ||
+                error.response?.data?.error ||
+                error.message ||
+                'Polling unit login failed';
+            throw new Error(errorMessage);
         }
     };
 

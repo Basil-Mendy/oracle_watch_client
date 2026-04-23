@@ -2,7 +2,8 @@
  * Polling Unit Print Modal - Display polling units with passwords for viewing and printing
  */
 import React, { useState, useEffect } from 'react';
-import { X, Printer, Download, Filter } from 'lucide-react';
+import { X, Download, Filter } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 import '../../styles/components/PrintModal.css';
 
 const PollingUnitPrintModal = ({ isOpen, units = [], onClose }) => {
@@ -47,15 +48,53 @@ const PollingUnitPrintModal = ({ isOpen, units = [], onClose }) => {
         setFilteredUnits(filtered);
     }, [searchTerm, selectedLGA, selectedWard, units]);
 
-    const handlePrint = () => {
-        window.print();
-    };
-
     const handleDownloadPDF = () => {
-        // Generate a simple text-to-PDF approach or use a library
-        // For now, we'll show instructions for print-to-PDF
-        alert('Use your browser\'s print function (Ctrl+P or Cmd+P) and select "Save as PDF" to download');
-        handlePrint();
+        const element = document.getElementById('print-area');
+
+        if (!element) {
+            console.error('Print area not found');
+            return;
+        }
+
+        // Clone the element to avoid modifying the DOM
+        const clonedElement = element.cloneNode(true);
+
+        // Remove flex constraints and overflow that html2canvas struggles with
+        clonedElement.style.display = 'block';
+        clonedElement.style.width = '100%';
+        clonedElement.style.height = 'auto';
+        clonedElement.style.overflow = 'visible';
+        clonedElement.style.maxHeight = 'none';
+        clonedElement.style.flex = 'none';
+        clonedElement.style.padding = '20px';
+        clonedElement.style.backgroundColor = '#fff';
+        clonedElement.style.color = '#000';
+
+        // Style table for proper PDF rendering
+        const table = clonedElement.querySelector('.print-table');
+        if (table) {
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+            table.style.marginTop = '15px';
+            table.style.fontSize = '12px';
+        }
+
+        // Ensure table rows are visible
+        const rows = clonedElement.querySelectorAll('tr');
+        rows.forEach(row => {
+            row.style.pageBreakInside = 'avoid';
+        });
+
+        const opt = {
+            margin: [10, 10, 10, 10],
+            filename: `Polling_Units_Credentials_${new Date().getTime()}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: 'auto', avoid: ['tr'] }
+        };
+
+        html2pdf().set(opt).from(clonedElement).save();
     };
 
     const resetFilters = () => {
@@ -132,7 +171,7 @@ const PollingUnitPrintModal = ({ isOpen, units = [], onClose }) => {
                     </div>
 
                     {/* Print Content */}
-                    <div className="print-content">
+                    <div className="print-content" id="print-area">
                         <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>
                             Polling Units & Credentials Report
                         </h2>
@@ -200,19 +239,11 @@ const PollingUnitPrintModal = ({ isOpen, units = [], onClose }) => {
                     </button>
                     <button
                         type="button"
-                        className="btn btn-success"
+                        className="btn btn-primary"
                         onClick={handleDownloadPDF}
                     >
                         <Download size={18} />
-                        Download as PDF
-                    </button>
-                    <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={handlePrint}
-                    >
-                        <Printer size={18} />
-                        Print
+                        Download PDF
                     </button>
                 </div>
             </div>
