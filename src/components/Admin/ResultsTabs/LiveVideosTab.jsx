@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Download, Radio, CheckCircle, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { getApiUrl } from '../../../utils/apiUrl';
 import locationService from '../../../services/locationService';
 import resultService from '../../../services/resultService';
 import '../../../styles/components/ResultsTabs.css';

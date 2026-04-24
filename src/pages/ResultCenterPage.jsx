@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useElection } from '../context/ElectionContext';
+import { getApiUrl } from '../utils/apiUrl';
 import Header from '../components/Common/Header';
 import Footer from '../components/Common/Footer';
 import {
