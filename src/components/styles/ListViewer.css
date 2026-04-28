@@ -300,8 +300,13 @@
 }
 
 .btn-small {
-    padding: 6px 12px;
+    padding: 6px 10px;
     font-size: 12px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 .btn-tiny {
@@ -347,14 +352,29 @@
 
 .action-buttons {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+    .btn-small {
+        padding: 5px 9px;
+        font-size: 11px;
+        height: 30px;
+    }
+}
+
 @media (max-width: 768px) {
     .list-filters {
         grid-template-columns: 1fr;
+    }
+
+    .btn-small {
+        padding: 5px 9px;
+        font-size: 11px;
+        height: 30px;
     }
 
     .list-table {

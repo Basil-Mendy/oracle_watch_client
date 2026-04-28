@@ -2,6 +2,7 @@
  * Polling Unit List Viewer Component - Display all polling units with ID and password reset
  */
 import React, { useState, useEffect } from 'react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import locationService from '../../services/locationService';
 import PasswordResetModal from './PasswordResetModal';
 import '../styles/ListViewer.css';
@@ -10,6 +11,7 @@ const PollingUnitListViewer = () => {
     const [pollingUnits, setPollingUnits] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
     const [selectedLGA, setSelectedLGA] = useState('');
     const [selectedWard, setSelectedWard] = useState('');
     const [lgas, setLGAs] = useState([]);
@@ -17,6 +19,7 @@ const PollingUnitListViewer = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPollingUnit, setSelectedPollingUnit] = useState(null);
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+    const [bulkResetting, setBulkResetting] = useState(false);
 
     useEffect(() => {
         loadLGAs();
@@ -113,6 +116,50 @@ const PollingUnitListViewer = () => {
         loadPollingUnits(selectedLGA || null, selectedWard || null);
     };
 
+    const handleBulkResetPasswords = async () => {
+        if (pollingUnits.length === 0) {
+            setMessage('No polling units to reset');
+            return;
+        }
+
+        if (!window.confirm(`Reset passwords for ALL ${pollingUnits.length} polling units? This cannot be undone.`)) {
+            return;
+        }
+
+        setBulkResetting(true);
+        setError('');
+        setMessage('');
+
+        try {
+            let successCount = 0;
+            let failCount = 0;
+
+            // Reset password for each unit
+            for (const unit of pollingUnits) {
+                try {
+                    await locationService.resetPollingUnitPassword(unit.id);
+                    successCount++;
+                } catch (err) {
+                    console.error(`Failed to reset ${unit.unit_id}:`, err);
+                    failCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                setMessage(`✅ Successfully reset ${successCount} passwords. Failed: ${failCount}.`);
+                // Refresh the list
+                loadPollingUnits(selectedLGA || null, selectedWard || null);
+            }
+            if (failCount > 0 && successCount === 0) {
+                setError(`❌ Failed to reset all passwords. Please try again.`);
+            }
+        } catch (err) {
+            setError('Failed to reset passwords: ' + err.message);
+        } finally {
+            setBulkResetting(false);
+        }
+    };
+
     const handleDeleteUnit = async (unit) => {
         if (!window.confirm(`Delete polling unit "${unit.name}" (${unit.unit_id})? This action cannot be undone.`)) {
             return;
@@ -170,12 +217,33 @@ const PollingUnitListViewer = () => {
                 <p>Total Units: {filteredUnits.length}</p>
             </div>
 
+            {error && (
+                <div className="alert alert-error" style={{ marginBottom: '15px', padding: '10px', borderRadius: '4px', backgroundColor: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' }}>
+                    <AlertCircle size={16} style={{ display: 'inline-block', marginRight: '8px' }} />
+                    {error}
+                </div>
+            )}
+
+            {message && (
+                <div className="alert alert-success" style={{ marginBottom: '15px', padding: '10px', borderRadius: '4px', backgroundColor: '#d4edda', color: '#155724', border: '1px solid #c3e6cb' }}>
+                    {message}
+                </div>
+            )}
+
             <div className="list-controls">
                 <button
                     className="btn btn-secondary"
                     onClick={downloadExcel}
                 >
                     📊 Download Excel
+                </button>
+                <button
+                    className="btn btn-warning"
+                    onClick={handleBulkResetPasswords}
+                    disabled={bulkResetting || pollingUnits.length === 0}
+                    title="Reset passwords for all polling units"
+                >
+                    {bulkResetting ? <><RefreshCw size={16} /> Resetting...</> : '🔐 Reset All Passwords'}
                 </button>
             </div>
 

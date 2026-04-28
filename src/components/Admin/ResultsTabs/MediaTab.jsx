@@ -1,10 +1,10 @@
 /**
  * Media Tab - Shows pictures and comments from polling units
- * List view with submitted count and expandable media details
- * Same pattern as vote counts tab for consistency
+ * CCTV-style grid view with filtering
+ * Same UI pattern as VoteCountsTab and LiveVideosTab for consistency
  */
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Filter, Image as ImageIcon, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Download, Image as ImageIcon, MessageSquare, ChevronDown, ChevronUp, Loader } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { getApiUrl } from '../../../utils/apiUrl';
 import locationService from '../../../services/locationService';
@@ -218,180 +218,487 @@ const MediaTab = ({ electionId }) => {
         return 'N/A';
     };
 
-    if (loading) return <div className="loading-spinner">Loading media...</div>;
-    if (error) return <div className="error-message">{error}</div>;
+    if (loading) {
+        return (
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '400px',
+                color: '#888'
+            }}>
+                <Loader size={24} style={{ animation: 'spin 1s linear infinite' }} />
+                <span style={{ marginLeft: '12px' }}>Loading media...</span>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div style={{
+                padding: '16px',
+                backgroundColor: '#f8d7da',
+                color: '#721c24',
+                borderRadius: '6px',
+                border: '1px solid #f5c6cb',
+                margin: '16px'
+            }}>
+                ⚠️ {error}
+            </div>
+        );
+    }
 
     return (
-        <div className="media-tab-v2">
-            {/* Submitted Count Header */}
-            <div className="submitted-header">
-                <div className="count-card">
-                    <div className="count-label">Media Submissions</div>
-                    <div className="count-display">
-                        <span className="count-number">{submittedCount}</span>
-                        <span className="count-total">/ {totalRegistered}</span>
+        <div style={{ padding: '16px' }}>
+            {/* Stats Header - Similar to LiveVideosTab and VoteCountsTab */}
+            <div style={{ marginBottom: '24px' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                    gap: '15px'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        padding: '18px',
+                        borderRadius: '12px',
+                        background: 'white',
+                        borderLeft: '4px solid #e6a817',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                        transition: 'all 0.3s ease'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '48px',
+                            height: '48px',
+                            background: 'rgba(230, 168, 23, 0.1)',
+                            borderRadius: '8px',
+                            color: '#e6a817'
+                        }}>
+                            <ImageIcon size={24} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#666', fontWeight: 500 }}>Media Submissions</span>
+                            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#222' }}>
+                                {submittedCount}<span style={{ fontSize: '1rem', color: '#999' }}> / {totalRegistered}</span>
+                            </span>
+                        </div>
                     </div>
-                    <div className="count-percentage">
-                        {((submittedCount / totalRegistered) * 100).toFixed(1)}% Complete
+
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        padding: '18px',
+                        borderRadius: '12px',
+                        background: 'white',
+                        borderLeft: '4px solid #28a745',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                        transition: 'all 0.3s ease'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '48px',
+                            height: '48px',
+                            background: 'rgba(40, 167, 69, 0.1)',
+                            borderRadius: '8px',
+                            color: '#28a745'
+                        }}>
+                            <ImageIcon size={24} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#666', fontWeight: 500 }}>Total Images</span>
+                            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#222' }}>{totalImages}</span>
+                        </div>
+                    </div>
+
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        padding: '18px',
+                        borderRadius: '12px',
+                        background: 'white',
+                        borderLeft: '4px solid #17a2b8',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                        transition: 'all 0.3s ease'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '48px',
+                            height: '48px',
+                            background: 'rgba(23, 162, 184, 0.1)',
+                            borderRadius: '8px',
+                            color: '#17a2b8'
+                        }}>
+                            <MessageSquare size={24} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#666', fontWeight: 500 }}>Total Comments</span>
+                            <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#222' }}>{totalComments}</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Filters & Search */}
-            <div className="filters-section-v2">
-                <div className="search-box">
-                    <Search size={20} />
+            <div style={{
+                marginBottom: '24px',
+                display: 'flex',
+                gap: '12px',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                padding: '15px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px'
+            }}>
+                <div style={{
+                    flex: '1 1 250px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 12px',
+                    border: '2px solid #e0e0e0',
+                    borderRadius: '6px',
+                    backgroundColor: '#fff',
+                    transition: 'border-color 0.3s'
+                }}>
+                    <Search size={18} style={{ color: '#999' }} />
                     <input
                         type="text"
-                        placeholder="Search by polling unit name, ID, or comment..."
+                        placeholder="Search by PU name, ID, or comment..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                            flex: 1,
+                            border: 'none',
+                            outline: 'none',
+                            fontSize: '13px',
+                            backgroundColor: 'transparent'
+                        }}
                     />
                 </div>
 
-                <div className="filter-controls-v2">
-                    <select
-                        value={mediaType}
-                        onChange={(e) => setMediaType(e.target.value)}
-                        className="filter-select"
-                    >
-                        <option value="all">All Media</option>
-                        <option value="images">Images Only</option>
-                        <option value="comments">Comments Only</option>
-                    </select>
+                <select
+                    value={mediaType}
+                    onChange={(e) => setMediaType(e.target.value)}
+                    style={{
+                        padding: '10px 12px',
+                        border: '2px solid #e0e0e0',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        backgroundColor: '#fff',
+                        transition: 'border-color 0.3s'
+                    }}
+                >
+                    <option value="all">All Media</option>
+                    <option value="images">Images Only</option>
+                    <option value="comments">Comments Only</option>
+                </select>
 
-                    <select
-                        value={selectedLGA}
-                        onChange={(e) => setSelectedLGA(e.target.value)}
-                        className="filter-select"
-                    >
-                        <option value="">All LGAs</option>
-                        {allLGAs.map(lga => (
-                            <option key={lga.id} value={lga.id}>{lga.name}</option>
-                        ))}
-                    </select>
+                <select
+                    value={selectedLGA}
+                    onChange={(e) => setSelectedLGA(e.target.value)}
+                    style={{
+                        padding: '10px 12px',
+                        border: '2px solid #e0e0e0',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        backgroundColor: '#fff',
+                        transition: 'border-color 0.3s'
+                    }}
+                >
+                    <option value="">All LGAs</option>
+                    {allLGAs.map(lga => (
+                        <option key={lga.id} value={lga.id}>{lga.name}</option>
+                    ))}
+                </select>
 
-                    <select
-                        value={selectedWard}
-                        onChange={(e) => setSelectedWard(e.target.value)}
-                        className="filter-select"
-                        disabled={!selectedLGA}
-                    >
-                        <option value="">All Wards</option>
-                        {wards.map(ward => (
-                            <option key={ward.id} value={ward.id}>{ward.name}</option>
-                        ))}
-                    </select>
+                <select
+                    value={selectedWard}
+                    onChange={(e) => setSelectedWard(e.target.value)}
+                    disabled={!selectedLGA}
+                    style={{
+                        padding: '10px 12px',
+                        border: '2px solid #e0e0e0',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        cursor: selectedLGA ? 'pointer' : 'not-allowed',
+                        backgroundColor: '#fff',
+                        opacity: !selectedLGA ? 0.6 : 1,
+                        transition: 'border-color 0.3s'
+                    }}
+                >
+                    <option value="">All Wards</option>
+                    {wards.map(ward => (
+                        <option key={ward.id} value={ward.id}>{ward.name}</option>
+                    ))}
+                </select>
 
-                    <button className="reset-filters" onClick={() => {
+                <button
+                    onClick={() => {
                         setSearchQuery('');
                         setSelectedLGA('');
                         setSelectedWard('');
                         setMediaType('all');
-                    }}>
-                        Reset
-                    </button>
-                </div>
+                    }}
+                    style={{
+                        padding: '10px 16px',
+                        backgroundColor: '#e0e0e0',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        transition: 'all 0.3s'
+                    }}
+                >
+                    Reset
+                </button>
             </div>
 
-            {/* Media List */}
-            <div className="media-list-container">
-                {groupedList.length === 0 ? (
-                    <div className="no-results">
-                        <p>No media found matching your filters</p>
-                    </div>
-                ) : (
-                    <div className="pu-media-wrapper">
-                        {groupedList.map((item, index) => {
-                            const counts = getMediaCount(item.media_items);
-                            return (
-                                <div key={item.polling_unit.id} className="pu-media-item">
-                                    <div
-                                        className="pu-media-header"
-                                        onClick={() => togglePU(item.polling_unit.id)}
-                                    >
-                                        <div className="row-number">{index + 1}</div>
-                                        <div className="row-info">
-                                            <div className="pu-name">{item.polling_unit.name}</div>
-                                            <div className="pu-details">
-                                                <span className="pu-id">ID: {item.polling_unit.unit_id}</span>
-                                                <span className="separator">•</span>
-                                                <span className="pu-ward">Ward: {getWardName(item.polling_unit.ward)}</span>
-                                                <span className="separator">•</span>
-                                                <span className="pu-lga">LGA: {getLGAName(item.polling_unit.lga)}</span>
-                                            </div>
-                                        </div>
-                                        <div className="media-counts">
-                                            {counts.images > 0 && (
-                                                <span className="count-badge images">
-                                                    <ImageIcon size={14} /> {counts.images}
-                                                </span>
-                                            )}
-                                            {counts.comments > 0 && (
-                                                <span className="count-badge comments">
-                                                    <MessageSquare size={14} /> {counts.comments}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="row-toggle">
-                                            {expandedPUs[item.polling_unit.id] ? (
-                                                <ChevronUp size={20} />
-                                            ) : (
-                                                <ChevronDown size={20} />
-                                            )}
+            {/* Media Items Grid */}
+            {groupedList.length === 0 ? (
+                <div style={{
+                    padding: '32px',
+                    textAlign: 'center',
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: '8px',
+                    color: '#888'
+                }}>
+                    <p>No media found matching your filters</p>
+                </div>
+            ) : (
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                    gap: '16px'
+                }}>
+                    {groupedList.map((item) => {
+                        const counts = getMediaCount(item.media_items);
+                        const puId = item.polling_unit.id;
+                        return (
+                            <div
+                                key={puId}
+                                style={{
+                                    borderRadius: '8px',
+                                    overflow: 'hidden',
+                                    backgroundColor: '#fff',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                    transition: 'all 0.3s',
+                                    border: '1px solid #ddd'
+                                }}
+                            >
+                                {/* Card Header */}
+                                <div
+                                    onClick={() => togglePU(puId)}
+                                    style={{
+                                        padding: '12px',
+                                        backgroundColor: '#f8f9fa',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        borderBottom: '1px solid #ddd',
+                                        transition: 'background 0.3s'
+                                    }}
+                                >
+                                    <div style={{
+                                        flex: 1,
+                                        minWidth: 0
+                                    }}>
+                                        <h5 style={{
+                                            margin: '0 0 4px 0',
+                                            fontSize: '14px',
+                                            fontWeight: 'bold',
+                                            color: '#222'
+                                        }}>
+                                            {item.polling_unit.name}
+                                        </h5>
+                                        <div style={{
+                                            fontSize: '11px',
+                                            color: '#666',
+                                            display: 'flex',
+                                            gap: '8px',
+                                            flexWrap: 'wrap'
+                                        }}>
+                                            <span>ID: {item.polling_unit.unit_id}</span>
+                                            <span>•</span>
+                                            <span>{getWardName(item.polling_unit.ward)}</span>
+                                            <span>•</span>
+                                            <span>{getLGAName(item.polling_unit.lga)}</span>
                                         </div>
                                     </div>
-
-                                    {expandedPUs[item.polling_unit.id] && (
-                                        <div className="pu-media-details">
-                                            <div className="media-items-grid">
-                                                {item.media_items.map((media, idx) => (
-                                                    media.type === 'image' ? (
-                                                        <div key={idx} className="media-item-image">
-                                                            <img
-                                                                src={media.image}
-                                                                alt={`From ${media.polling_unit?.name}`}
-                                                                className="media-thumbnail"
-                                                                onError={(e) => {
-                                                                    e.target.src = '/api/placeholder.jpg';
-                                                                }}
-                                                            />
-                                                            <div className="media-type-badge">
-                                                                <ImageIcon size={14} /> Image
-                                                            </div>
-                                                            <div className="media-time">
-                                                                {new Date(media.timestamp).toLocaleTimeString()}
-                                                            </div>
-                                                            <a href={media.image} target="_blank" rel="noopener noreferrer" className="view-link">
-                                                                View Full
-                                                            </a>
-                                                        </div>
-                                                    ) : (
-                                                        <div key={idx} className="media-item-comment">
-                                                            <div className="comment-badge">
-                                                                <MessageSquare size={14} /> Comment
-                                                            </div>
-                                                            <div className="comment-content">
-                                                                {media.comment_text}
-                                                            </div>
-                                                            <div className="comment-time">
-                                                                {new Date(media.timestamp).toLocaleTimeString()}
-                                                            </div>
-                                                        </div>
-                                                    )
-                                                ))}
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '6px',
+                                        alignItems: 'center'
+                                    }}>
+                                        {counts.images > 0 && (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                padding: '4px 8px',
+                                                backgroundColor: '#28a745',
+                                                color: '#fff',
+                                                borderRadius: '4px',
+                                                fontSize: '11px',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                <ImageIcon size={12} /> {counts.images}
                                             </div>
-                                            <div className="submission-time">
-                                                Submitted: {new Date(item.media_items[0]?.timestamp).toLocaleString()}
+                                        )}
+                                        {counts.comments > 0 && (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                padding: '4px 8px',
+                                                backgroundColor: '#17a2b8',
+                                                color: '#fff',
+                                                borderRadius: '4px',
+                                                fontSize: '11px',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                <MessageSquare size={12} /> {counts.comments}
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
+                                    <div style={{ color: '#666' }}>
+                                        {expandedPUs[puId] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                    </div>
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+
+                                {/* Expandable Content */}
+                                {expandedPUs[puId] && (
+                                    <div style={{ padding: '12px' }}>
+                                        <div style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                                            gap: '12px'
+                                        }}>
+                                            {item.media_items.map((media, idx) => (
+                                                media.type === 'image' ? (
+                                                    <div
+                                                        key={idx}
+                                                        style={{
+                                                            borderRadius: '6px',
+                                                            overflow: 'hidden',
+                                                            backgroundColor: '#f0f0f0',
+                                                            position: 'relative',
+                                                            aspectRatio: '1',
+                                                            cursor: 'pointer',
+                                                            transition: 'transform 0.3s'
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={media.image}
+                                                            alt={`From ${media.polling_unit?.name}`}
+                                                            style={{
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                objectFit: 'cover'
+                                                            }}
+                                                            onError={(e) => {
+                                                                e.target.src = '/api/placeholder.jpg';
+                                                            }}
+                                                        />
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '4px',
+                                                            right: '4px',
+                                                            backgroundColor: '#28a745',
+                                                            color: '#fff',
+                                                            padding: '2px 6px',
+                                                            borderRadius: '3px',
+                                                            fontSize: '10px',
+                                                            fontWeight: 'bold',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '2px'
+                                                        }}>
+                                                            <ImageIcon size={10} /> Image
+                                                        </div>
+                                                        <a
+                                                            href={media.image}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            style={{
+                                                                position: 'absolute',
+                                                                bottom: 0,
+                                                                left: 0,
+                                                                right: 0,
+                                                                padding: '4px',
+                                                                backgroundColor: 'rgba(0,0,0,0.7)',
+                                                                color: '#fff',
+                                                                fontSize: '10px',
+                                                                textAlign: 'center',
+                                                                textDecoration: 'none'
+                                                            }}
+                                                        >
+                                                            View Full
+                                                        </a>
+                                                    </div>
+                                                ) : (
+                                                    <div
+                                                        key={idx}
+                                                        style={{
+                                                            backgroundColor: '#e8f4f8',
+                                                            padding: '10px',
+                                                            borderRadius: '6px',
+                                                            border: '1px solid #b3d9e6',
+                                                            gridColumn: 'span 1'
+                                                        }}
+                                                    >
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '4px',
+                                                            marginBottom: '6px',
+                                                            fontSize: '10px',
+                                                            fontWeight: 'bold',
+                                                            color: '#17a2b8'
+                                                        }}>
+                                                            <MessageSquare size={12} /> Comment
+                                                        </div>
+                                                        <p style={{
+                                                            margin: '0 0 6px 0',
+                                                            fontSize: '11px',
+                                                            color: '#222',
+                                                            lineHeight: '1.3',
+                                                            maxHeight: '60px',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        }}>
+                                                            {media.comment_text}
+                                                        </p>
+                                                        <div style={{
+                                                            fontSize: '9px',
+                                                            color: '#999'
+                                                        }}>
+                                                            {new Date(media.timestamp).toLocaleTimeString()}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };

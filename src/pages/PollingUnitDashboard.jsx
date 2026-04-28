@@ -27,10 +27,8 @@ const PollingUnitDashboard = () => {
     // Submission states for each group
     const [voteSubmitting, setVoteSubmitting] = useState(false);
     const [mediaSubmitting, setMediaSubmitting] = useState(false);
-    const [liveSubmitting, setLiveSubmitting] = useState(false);
     const [voteSubmitted, setVoteSubmitted] = useState(false);
     const [mediaSubmitted, setMediaSubmitted] = useState(false);
-    const [liveSubmitted, setLiveSubmitted] = useState(false);
 
     // Load elections on component mount and when returning from detail view
     useEffect(() => {
@@ -81,7 +79,7 @@ const PollingUnitDashboard = () => {
         setVoteData({});
         setImages([]);
         setComments('');
-        setMessage({ type: '', text: '' });
+        setMessage({ type: '', text: '' });  // Remove preRecordedVideos from reset
     };
 
     const getCurrentElection = () => {
@@ -93,14 +91,20 @@ const PollingUnitDashboard = () => {
             ...prev,
             [partyId]: votes
         }));
+        // Reset voteSubmitted flag to allow resubmission when votes are changed
+        setVoteSubmitted(false);
     };
 
     const handleImagesUpdate = (updatedImages) => {
         setImages(updatedImages);
+        // Reset mediaSubmitted flag to allow resubmission of additional media
+        setMediaSubmitted(false);
     };
 
     const handleCommentsChange = (text) => {
         setComments(text);
+        // Reset mediaSubmitted flag to allow resubmission when new comments are added
+        setMediaSubmitted(false);
     };
 
     const submitVoteCount = async () => {
@@ -156,6 +160,12 @@ const PollingUnitDashboard = () => {
 
             setMessage({ type: 'success', text: 'Photos and comments submitted successfully!' });
             setMediaSubmitted(true);
+            // Clear form for next batch of submissions
+            setTimeout(() => {
+                setImages([]);
+                setComments('');
+                setMediaSubmitted(false);
+            }, 2000);
         } catch (error) {
             console.error('Media submission error:', error);
             setMessage({ type: 'error', text: error.response?.data?.error || error.message || 'Failed to submit photos and comments' });
@@ -164,25 +174,7 @@ const PollingUnitDashboard = () => {
         }
     };
 
-    const submitLiveVideo = async () => {
-        setLiveSubmitting(true);
-        try {
-            const password = sessionStorage.getItem('polling_unit_password');
-            if (!password) {
-                throw new Error('Session expired. Please log in again.');
-            }
 
-            // Check if LiveStreamWidget has provided video data
-            // For now, just mark as submitted (LiveStreamWidget handles actual upload)
-            setMessage({ type: 'success', text: 'Live video submitted successfully!' });
-            setLiveSubmitted(true);
-        } catch (error) {
-            console.error('Live video submission error:', error);
-            setMessage({ type: 'error', text: error.message || 'Failed to submit live video' });
-        } finally {
-            setLiveSubmitting(false);
-        }
-    };
 
     const getActiveElections = () => {
         return elections.filter(e => e.status === 'active');
@@ -389,7 +381,7 @@ const PollingUnitDashboard = () => {
                                 <button
                                     className="btn btn-primary"
                                     onClick={submitVoteCount}
-                                    disabled={voteSubmitting || voteSubmitted || Object.keys(voteData).length === 0}
+                                    disabled={voteSubmitting || Object.keys(voteData).length === 0}
                                 >
                                     {voteSubmitting ? <><Loader size={16} className="inline-icon" /> Submitting...</> : voteSubmitted ? <><CheckCircle size={16} className="inline-icon" /> Submitted</> : <><Upload size={16} className="inline-icon" /> Submit Vote Counts</>
                                     }
@@ -436,7 +428,7 @@ const PollingUnitDashboard = () => {
                                 <button
                                     className="btn btn-primary"
                                     onClick={submitMediaAndComments}
-                                    disabled={mediaSubmitting || mediaSubmitted || (images.length === 0 && comments.trim().length === 0)}
+                                    disabled={mediaSubmitting || (images.length === 0 && comments.trim().length === 0)}
                                 >
                                     {mediaSubmitting ? <><Loader size={16} className="inline-icon" /> Submitting...</> : mediaSubmitted ? <><CheckCircle size={16} className="inline-icon" /> Submitted</> : <><Upload size={16} className="inline-icon" /> Submit Media & Comments</>
                                     }
@@ -451,25 +443,12 @@ const PollingUnitDashboard = () => {
                                     <h2><Video size={24} className="inline-icon" />Live Stream</h2>
                                     <p>Go live or upload recorded videos of the polling process</p>
                                 </div>
-                                <div className="group-status">
-                                    {liveSubmitted && <span className="status-badge status-success"><CheckCircle size={16} className="inline-icon" /> Submitted</span>}
-                                </div>
                             </div>
                             <div className="group-content">
                                 <LiveStreamWidget
                                     electionId={selectedElection}
                                     pollingUnitId={user?.unit_id || user?.id}
                                 />
-                            </div>
-                            <div className="group-actions">
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={submitLiveVideo}
-                                    disabled={liveSubmitting || liveSubmitted}
-                                >
-                                    {liveSubmitting ? <><Loader size={16} className="inline-icon" /> Submitting...</> : liveSubmitted ? <><CheckCircle size={16} className="inline-icon" /> Submitted</> : <><Upload size={16} className="inline-icon" /> Submit Live Video</>
-                                    }
-                                </button>
                             </div>
                         </div>
 

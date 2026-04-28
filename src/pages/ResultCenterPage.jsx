@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useElection } from '../context/ElectionContext';
 import { getApiUrl } from '../utils/apiUrl';
+import { RefreshCw } from 'lucide-react';
 import Header from '../components/Common/Header';
 import Footer from '../components/Common/Footer';
 import {
@@ -438,6 +439,19 @@ const ResultCenterPage = () => {
     }
   }, [selectedPUWard, selectedPULGA, fetchPollingUnits]);
 
+  /* Manual refresh handlers */
+  const handleRefreshWards = useCallback(() => {
+    console.log('🔄 Manually refreshing wards...');
+    setWardsLoading(true);
+    fetchWards(selectedWardLGA);
+  }, [fetchWards, selectedWardLGA]);
+
+  const handleRefreshPollingUnits = useCallback(() => {
+    console.log('🔄 Manually refreshing polling units...');
+    setPULoading(true);
+    fetchPollingUnits(selectedPUWard, selectedPULGA);
+  }, [fetchPollingUnits, selectedPUWard, selectedPULGA]);
+
   /* ── derived data ── */
   const parties = results?.parties || [];
   const totalVotes = results?.total_votes || 0;
@@ -688,6 +702,27 @@ const ResultCenterPage = () => {
                 <option key={lga.id} value={lga.id}>{lga.name}</option>
               ))}
             </select>
+            <button
+              onClick={handleRefreshWards}
+              disabled={wardsLoading}
+              style={{
+                padding: '6px 12px',
+                marginLeft: '8px',
+                backgroundColor: '#f0f0f0',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                cursor: wardsLoading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                opacity: wardsLoading ? 0.6 : 1,
+                transition: 'all 0.3s'
+              }}
+              title="Refresh wards data"
+            >
+              <RefreshCw size={16} style={{ animation: wardsLoading ? 'spin 1s linear infinite' : 'none' }} />
+              Refresh
+            </button>
           </div>
 
           {/* Progress counter */}

@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { getApiUrl } from '../../../utils/apiUrl';
+import { useAuth } from '../../../context/AuthContext';
 import locationService from '../../../services/locationService';
 import '../../../styles/components/ResultsTabs.css';
 
@@ -21,6 +22,7 @@ const colorFor = (acronym, idx) =>
     ['#1d9e75', '#3266ad', '#e6a817', '#e24b4a', '#9b59b6', '#e67e22'][idx % 6];
 
 const VoteCountsTab = ({ electionId }) => {
+    const { user } = useAuth();
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -59,13 +61,10 @@ const VoteCountsTab = ({ electionId }) => {
 
     // Fetch all polling units once wards are loaded
     useEffect(() => {
-        console.log('📌 Polling unit fetch effect triggered:', { electionId, wardsFetched, puFetched });
+        console.log('📌 Polling unit fetch effect triggered:', { electionId, wardsFetched });
         if (electionId && wardsFetched && !puFetched) {
-            console.log('✨ Starting polling unit fetch...');
-            (async () => {
-                await fetchPollingUnits();
-                setPUFetched(true);  // Only set to true AFTER fetchPollingUnits completes
-            })();
+            console.log('✨ Polling units fetched in fetchWards');
+            setPUFetched(true);
         }
     }, [electionId, wardsFetched, puFetched]);
 
@@ -85,56 +84,65 @@ const VoteCountsTab = ({ electionId }) => {
 
     const fetchWards = async () => {
         try {
-            console.log('🔄 Fetching wards for election:', electionId);
+            const token = localStorage.getItem('auth_token');
+
             // Fetch wards with results from all LGAs
             const allWardsWithResults = [];
             for (const lga of allLGAs) {
-                const response = await fetch(
-                    getApiUrl(`/results/?election=${electionId}&level=ward&lga=${lga.id}`),
-                    { headers: { 'Content-Type': 'application/json' } }
-                );
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log(`  LGA ${lga.name}: ${data.wards?.length || 0} wards`);
-                    if (data.wards) {
-                        // Add lga info to each ward for later filtering
-                        const wardsWithLGA = data.wards.map(w => ({ ...w, lga: lga }));
-                        allWardsWithResults.push(...wardsWithLGA);
+                try {
+                    const response = await fetch(
+                        getApiUrl(`/results/?election=${electionId}&level=ward&lga=${lga.id}`),
+                        {
+                            headers: {
+                                'Authorization': `Token ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log(`  LGA ${lga.name}: ${data.wards?.length || 0} wards`);
+                        if (data.wards) {
+                            // Add lga info to each ward for later filtering
+                            const wardsWithLGA = data.wards.map(w => ({ ...w, lga: lga }));
+                            allWardsWithResults.push(...wardsWithLGA);
+                        }
+                    } else {
+                        console.warn(`  LGA ${lga.name}: Failed to fetch wards (${response.status})`);
                     }
+                } catch (lgaErr) {
+                    console.warn(`  LGA ${lga.name}: Error fetching wards:`, lgaErr);
                 }
             }
             console.log(`✅ Total wards fetched: ${allWardsWithResults.length}`);
             setAllFetchedWards(allWardsWithResults);
-            setLoading(false);
-        } catch (err) {
-            console.error('Failed to load wards:', err);
-            setAllFetchedWards([]);
-            setLoading(false);
-        }
-    };
-
-    const fetchPollingUnits = async () => {
-        try {
-            setLoading(true);
-            console.log('🔄 Fetching polling units. Wards available:', allFetchedWards.length);
             const allPUs = [];
 
             // If we have wards, fetch polling units for each ward
-            if (allFetchedWards.length > 0) {
+            if (allWardsWithResults.length > 0) {
                 console.log('📍 Using fetched wards');
-                for (const ward of allFetchedWards) {
-                    const response = await fetch(
-                        getApiUrl(`/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`),
-                        { headers: { 'Content-Type': 'application/json' } }
-                    );
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log(`  Ward ${ward.name}: ${data.polling_units?.length || 0} polling units`);
-                        if (data.polling_units) {
-                            allPUs.push(...data.polling_units);
+                for (const ward of allWardsWithResults) {
+                    try {
+                        const response = await fetch(
+                            getApiUrl(`/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`),
+                            {
+                                headers: {
+                                    'Authorization': `Token ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            }
+                        );
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log(`  Ward ${ward.name}: ${data.polling_units?.length || 0} polling units`);
+                            if (data.polling_units) {
+                                allPUs.push(...data.polling_units);
+                            }
+                        } else {
+                            console.warn(`  Ward ${ward.name}: Failed to fetch (${response.status})`);
                         }
-                    } else {
-                        console.warn(`  Ward ${ward.name}: Failed to fetch (${response.status})`);
+                    } catch (wardErr) {
+                        console.warn(`  Ward ${ward.name}: Error fetching polling units:`, wardErr);
                     }
                 }
             } else {
@@ -143,39 +151,65 @@ const VoteCountsTab = ({ electionId }) => {
                 console.log('⚠️ No wards found from results API, attempting fallback from location API...');
                 try {
                     for (const lga of allLGAs) {
-                        const wardResponse = await fetch(
-                            getApiUrl(`/locations/wards/?lga=${lga.id}`),
-                            { headers: { 'Content-Type': 'application/json' } }
-                        );
-                        if (wardResponse.ok) {
-                            const wardData = await wardResponse.json();
-                            const wardsList = wardData.data || wardData.results || [];
-                            console.log(`  LGA ${lga.name}: ${wardsList.length} wards from location API`);
+                        try {
+                            const wardResponse = await fetch(
+                                getApiUrl(`/locations/wards/?lga=${lga.id}`),
+                                {
+                                    headers: {
+                                        'Authorization': `Token ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                }
+                            );
+                            if (wardResponse.ok) {
+                                const wardData = await wardResponse.json();
+                                const wardsList = wardData.data || wardData.results || [];
+                                console.log(`  LGA ${lga.name}: ${wardsList.length} wards from location API`);
 
-                            // Now fetch polling units for each ward
-                            for (const ward of wardsList) {
-                                const puResponse = await fetch(
-                                    getApiUrl(`/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`),
-                                    { headers: { 'Content-Type': 'application/json' } }
-                                );
-                                if (puResponse.ok) {
-                                    const puData = await puResponse.json();
-                                    console.log(`    Ward ${ward.name}: ${puData.polling_units?.length || 0} PUs`);
-                                    if (puData.polling_units) {
-                                        allPUs.push(...puData.polling_units);
+                                // Now fetch polling units for each ward
+                                for (const ward of wardsList) {
+                                    try {
+                                        const puResponse = await fetch(
+                                            getApiUrl(`/results/?election=${electionId}&level=polling_unit&ward=${ward.id}`),
+                                            {
+                                                headers: {
+                                                    'Authorization': `Token ${token}`,
+                                                    'Content-Type': 'application/json'
+                                                }
+                                            }
+                                        );
+                                        if (puResponse.ok) {
+                                            const puData = await puResponse.json();
+                                            console.log(`    Ward ${ward.name}: ${puData.polling_units?.length || 0} PUs`);
+                                            if (puData.polling_units) {
+                                                allPUs.push(...puData.polling_units);
+                                            }
+                                        }
+                                    } catch (puErr) {
+                                        console.warn(`    Ward ${ward.name}: Error fetching PUs:`, puErr);
                                     }
                                 }
                             }
+                        } catch (lgaErr) {
+                            console.warn(`  LGA ${lga.name}: Error fetching wards:`, lgaErr);
                         }
                     }
                 } catch (fallbackErr) {
                     console.error('Fallback fetch failed:', fallbackErr);
+                    setError('Failed to fetch results: ' + fallbackErr.message);
                 }
             }
 
             setResults(allPUs);
-            setError('');
+            if (allPUs.length === 0) {
+                setError('No vote results found for this election yet');
+            } else {
+                setError('');
+            }
             console.log(`✅ Total polling units fetched: ${allPUs.length}`);
+        } catch (err) {
+            console.error('Failed to fetch polling units:', err);
+            setError('Failed to fetch polling units: ' + err.message);
         } finally {
             setLoading(false);
         }
@@ -351,7 +385,7 @@ const VoteCountsTab = ({ electionId }) => {
                                 style={tableItemHeaderStyle}
                                 onClick={() => togglePU(pu.id)}
                             >
-                                <span>{pu.name || `PU-${pu.unit_id}`}</span>
+                                <span>{pu.name || `PU - ${pu.unit_id}`}</span>
                                 <span style={{ fontSize: 10, color: '#999' }}>{expandedPUs[pu.id] ? '▼' : '▶'}</span>
                             </div>
 

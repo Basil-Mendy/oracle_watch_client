@@ -267,6 +267,34 @@
     cursor: not-allowed;
 }
 
+/* Password Input Group with Toggle */
+.password-input-group {
+    position: relative;
+}
+
+.password-toggle {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-base);
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
+
+.password-toggle:hover:not(:disabled) {
+    color: var(--primary-main);
+}
+
+.password-toggle:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 /* Form Options */
 .form-options {
     display: flex;

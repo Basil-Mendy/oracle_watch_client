@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { MapPin, Lock, ArrowRight, AlertCircle, Home, Check, Info } from 'lucide-react';
+import { MapPin, Lock, ArrowRight, AlertCircle, Home, Check, Info, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import '../styles/pages/LoginPage.css';
 
@@ -13,6 +13,7 @@ const PollingUnitLogin = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showAccessCode, setShowAccessCode] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -133,11 +134,11 @@ const PollingUnitLogin = () => {
 
                         <div className="form-group">
                             <label htmlFor="accessCode">Access Code</label>
-                            <div className="input-group">
+                            <div className="input-group password-input-group">
                                 <Lock size={18} />
                                 <input
                                     id="accessCode"
-                                    type="password"
+                                    type={showAccessCode ? 'text' : 'password'}
                                     name="accessCode"
                                     placeholder="Enter access code"
                                     value={formData.accessCode}
@@ -146,6 +147,15 @@ const PollingUnitLogin = () => {
                                     required
                                     autoComplete="off"
                                 />
+                                <button
+                                    type="button"
+                                    className="password-toggle"
+                                    onClick={() => setShowAccessCode(!showAccessCode)}
+                                    disabled={loading}
+                                    title={showAccessCode ? 'Hide code' : 'Show code'}
+                                >
+                                    {showAccessCode ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
                             <small>6-8 character code provided by officials</small>
                         </div>
