@@ -48,7 +48,7 @@ const PollingUnitPrintModal = ({ isOpen, units = [], onClose }) => {
         setFilteredUnits(filtered);
     }, [searchTerm, selectedLGA, selectedWard, units]);
 
-    const handleDownloadPDF = () => {
+    const handleDownloadPDF = async () => {
         const element = document.getElementById('print-area');
 
         if (!element) {
@@ -56,89 +56,94 @@ const PollingUnitPrintModal = ({ isOpen, units = [], onClose }) => {
             return;
         }
 
-        // Create a new document fragment with all content
-        const printContent = element.innerHTML;
+        try {
+            // Create a container to hold the content for PDF generation
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 210mm;
+                background: white;
+                padding: 20px;
+                z-index: -9999;
+                visibility: hidden;
+            `;
 
-        // Create HTML string with proper styling
-        const htmlContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { font-family: Arial, sans-serif; background: #ffffff; color: #000; }
-                    .print-content { width: 100%; padding: 20px; }
-                    h2 { font-size: 18px; margin: 0 0 15px 0; text-align: center; color: #000; }
-                    .print-summary { background: #f8f9fa; padding: 10px; margin-bottom: 15px; border-radius: 3px; page-break-inside: avoid; }
-                    .print-summary p { margin: 5px 0; font-size: 12px; color: #555; }
-                    .print-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px; }
-                    .print-table thead { background: #2c3e50; color: white; }
-                    .print-table th { padding: 8px 6px; text-align: left; font-weight: 600; border: 1px solid #34495e; background: #2c3e50; color: white; }
-                    .print-table td { padding: 8px 6px; border: 1px solid #ddd; color: #000; word-break: break-word; }
-                    .print-table tbody tr { page-break-inside: avoid; }
-                    .print-table tbody tr:nth-child(odd) { background: #fff; }
-                    .print-table tbody tr:nth-child(even) { background: #f8f9fa; }
-                    code { font-family: 'Courier New', monospace; font-size: 10px; padding: 2px 4px; border-radius: 2px; display: inline-block; }
-                    code.print-code { background: #f5f5f5; color: #c7254e; }
-                    code.print-password { background: #fff3cd; color: #856404; font-weight: 600; }
-                    .print-footer { background: #fff3cd; padding: 10px; border-radius: 3px; border-left: 3px solid #ffc107; margin-top: 15px; page-break-inside: avoid; }
-                    .print-footer p { margin: 0; font-size: 11px; color: #000; }
-                    .empty-state { text-align: center; padding: 20px; }
-                    @page { margin: 10mm; }
-                    @media print {
-                        body { background: white; }
-                        .print-table { page-break-inside: avoid; }
-                        tr { page-break-inside: avoid; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="print-content">
-                    ${printContent}
-                </div>
-            </body>
-            </html>
-        `;
+            // Clone the print element
+            const clone = element.cloneNode(true);
+            
+            // Apply comprehensive styles to ensure rendering
+            const style = document.createElement('style');
+            style.textContent = `
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body, div { background: white !important; color: black !important; }
+                h2 { font-size: 18px !important; margin: 0 0 15px 0 !important; text-align: center !important; color: #000 !important; }
+                .print-summary { background: #f8f9fa !important; padding: 10px !important; margin-bottom: 15px !important; border-radius: 3px !important; }
+                .print-summary p { margin: 5px 0 !important; font-size: 12px !important; color: #555 !important; }
+                .print-table { width: 100% !important; border-collapse: collapse !important; margin-bottom: 15px !important; font-size: 11px !important; }
+                .print-table thead { background: #2c3e50 !important; color: white !important; }
+                .print-table th { padding: 8px 6px !important; text-align: left !important; font-weight: 600 !important; border: 1px solid #34495e !important; color: white !important; }
+                .print-table td { padding: 8px 6px !important; border: 1px solid #ddd !important; color: #000 !important; }
+                .print-table tbody tr:nth-child(odd) { background: #fff !important; }
+                .print-table tbody tr:nth-child(even) { background: #f8f9fa !important; }
+                code { font-family: 'Courier New', monospace !important; font-size: 10px !important; padding: 2px 4px !important; display: inline-block !important; }
+                code.print-code { background: #f5f5f5 !important; color: #c7254e !important; }
+                code.print-password { background: #fff3cd !important; color: #856404 !important; font-weight: 600 !important; }
+                .print-footer { background: #fff3cd !important; padding: 10px !important; border-radius: 3px !important; border-left: 3px solid #ffc107 !important; margin-top: 15px !important; }
+                .print-footer p { margin: 0 !important; font-size: 11px !important; color: #000 !important; }
+                .empty-state { text-align: center !important; padding: 20px !important; }
+            `;
 
-        // Create a blob from HTML
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = url;
-        
-        iframe.onload = function() {
-            try {
-                const opt = {
-                    margin: [10, 10, 10, 10],
-                    filename: `Polling_Units_Credentials_${new Date().getTime()}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { 
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: 'avoid', avoid: 'tr' }
-                };
+            pdfContainer.appendChild(style);
+            pdfContainer.appendChild(clone);
+            document.body.appendChild(pdfContainer);
 
-                // Get the HTML element from iframe
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                html2pdf().set(opt).from(iframeDoc.body).save();
-            } finally {
-                // Cleanup
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                    URL.revokeObjectURL(url);
-                }, 500);
-            }
-        };
+            // Add delay to ensure DOM is ready
+            await new Promise(resolve => setTimeout(resolve, 100));
 
-        document.body.appendChild(iframe);
+            const options = {
+                margin: [10, 10, 10, 10],
+                filename: `Polling_Units_Credentials_${new Date().getTime()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    windowHeight: pdfContainer.scrollHeight
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                },
+                pagebreak: {
+                    mode: ['avoid-all', 'css', 'legacy'],
+                    avoid: 'tr'
+                }
+            };
+
+            // Generate PDF from the visible container
+            await html2pdf().set(options).from(pdfContainer).save();
+
+            // Cleanup
+            document.body.removeChild(pdfContainer);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+            
+            // Ensure cleanup even on error
+            const containers = document.querySelectorAll('div[style*="z-index: -9999"]');
+            containers.forEach(container => {
+                try {
+                    document.body.removeChild(container);
+                } catch (e) {
+                    // Already removed
+                }
+            });
+        }
     };
 
     const resetFilters = () => {
