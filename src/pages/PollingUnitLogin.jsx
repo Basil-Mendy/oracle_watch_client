@@ -51,7 +51,7 @@ const PollingUnitLogin = () => {
                 <Link to="/" className="login-brand">
                     <div className="brand-icon"><MapPin size={32} /></div>
                     <div>
-                        <h1>Oracle Watch</h1>
+                        <h1>Poll Watch</h1>
                         <p>Election Platform</p>
                     </div>
                 </Link>
@@ -81,7 +81,7 @@ const PollingUnitLogin = () => {
                 </div>
 
                 <div className="login-footer-text">
-                    © 2024 Oracle Watch. Transparent Elections.
+                    © 2024 Poll Watch. Transparent Elections.
                 </div>
             </div>
 

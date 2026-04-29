@@ -8,7 +8,7 @@
 }
 
 .login-left {
-    background: linear-gradient(135deg, var(--primary-main) 0%, var(--primary-dark) 100%);
+    background: linear-gradient(135deg, #1a3a52 0%, #0d1f2d 50%, var(--primary-main) 100%);
     color: white;
     padding: 3rem;
     display: flex;
@@ -16,6 +16,7 @@
     justify-content: space-between;
     position: relative;
     overflow: hidden;
+    background-attachment: fixed;
 }
 
 .login-left::before {
@@ -23,10 +24,11 @@
     position: absolute;
     top: -50%;
     right: -20%;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(26, 188, 156, 0.15) 0%, transparent 70%);
     border-radius: 50%;
+    animation: float 6s ease-in-out infinite;
 }
 
 .login-left::after {
@@ -34,10 +36,16 @@
     position: absolute;
     bottom: -30%;
     left: -10%;
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(75, 192, 192, 0.1) 0%, transparent 70%);
     border-radius: 50%;
+    animation: float 8s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(20px); }
 }
 
 .login-brand {
@@ -49,25 +57,52 @@
     font-weight: 700;
     margin-bottom: 2rem;
     z-index: 1;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.login-brand:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .brand-icon {
     font-size: 2.5rem;
     display: flex;
     align-items: center;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.login-brand:hover .brand-icon {
+    transform: scale(1.1) rotate(5deg);
 }
 
 .login-brand h1 {
     margin: 0;
     font-size: 1.75rem;
     color: white;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
 
 .login-brand p {
     margin: 0;
     font-size: 0.875rem;
-    opacity: 0.9;
-    font-weight: 400;
+    opacity: 0.85;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .login-hero {
@@ -76,48 +111,81 @@
 }
 
 .login-hero h2 {
-    font-size: 2rem;
-    margin: 0 0 1rem 0;
+    font-size: 2.5rem;
+    margin: 0 0 0.75rem 0;
     color: white;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
 }
 
 .login-hero p {
-    font-size: 1rem;
-    margin: 0 0 2rem 0;
-    opacity: 0.95;
-    line-height: 1.6;
+    font-size: 1.05rem;
+    margin: 0 0 3rem 0;
+    opacity: 0.9;
+    line-height: 1.7;
+    font-weight: 400;
 }
 
 .features-list {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
 .feature {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 1rem;
     font-size: 0.95rem;
     opacity: 0.95;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.feature:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-left-color: rgba(255, 255, 255, 0.4);
+    transform: translateX(8px);
 }
 
 .feature-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
     flex-shrink: 0;
-    font-size: 1rem;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.feature:hover .feature-icon {
+    transform: scale(1.15) rotate(5deg);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.15));
 }
 
 .login-footer-text {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.7);
     z-index: 1;
+    text-align: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: auto;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.login-footer-text:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .login-right {
@@ -396,7 +464,8 @@
 
 /* Polling Unit Specific */
 .polling-unit-login .login-left {
-    background: linear-gradient(135deg, var(--secondary-main) 0%, var(--secondary-dark) 100%);
+    background: linear-gradient(135deg, #1a4d3a 0%, #0d2818 50%, var(--secondary-main) 100%);
+    background-attachment: fixed;
 }
 
 .polling-unit-login .input-group:focus-within {

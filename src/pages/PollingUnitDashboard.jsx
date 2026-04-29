@@ -5,7 +5,7 @@ import Header from '../components/Common/Header';
 import Footer from '../components/Common/Footer';
 import ElectionVoteForm from '../components/PollingUnit/ElectionVoteForm';
 import ImageUploadWidget from '../components/PollingUnit/ImageUploadWidget';
-import LiveStreamWidget from '../components/PollingUnit/LiveStreamWidget';
+import VideoRecorder from '../components/PollingUnit/VideoRecorder';
 import CommentsSection from '../components/PollingUnit/CommentsSection';
 import SubmissionStatusCard from '../components/PollingUnit/SubmissionStatusCard';
 import { ArrowLeft, Clock, Radio, Calendar, Users, CheckCircle, AlertCircle, Upload, Loader, Camera, MessageSquare, Video, BarChart3, Zap } from 'lucide-react';
@@ -440,14 +440,27 @@ const PollingUnitDashboard = () => {
                         <div className="form-group-card">
                             <div className="group-header">
                                 <div className="header-content">
-                                    <h2><Video size={24} className="inline-icon" />Live Stream</h2>
-                                    <p>Go live or upload recorded videos of the polling process</p>
+                                    <h2><Video size={24} className="inline-icon" />Live Stream & Recording</h2>
+                                    <p>Go live or record videos of the polling process</p>
                                 </div>
                             </div>
                             <div className="group-content">
-                                <LiveStreamWidget
-                                    electionId={selectedElection}
-                                    pollingUnitId={user?.unit_id || user?.id}
+                                <VideoRecorder
+                                    pollingUnitId={user?.unit_id}
+                                    pollingUnitName={user?.polling_unit_name}
+                                    lgaId={user?.lga_id}
+                                    lgaName={user?.lga_name}
+                                    wardId={user?.ward_id}
+                                    wardName={user?.ward_name}
+                                    cloudinaryCloudName={process.env.REACT_APP_CLOUDINARY_CLOUD_NAME}
+                                    cloudinaryUploadPreset={process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET}
+                                    onUploadSuccess={(data) => {
+                                        setMessage({ type: 'success', text: 'Video submitted successfully! ✅' });
+                                        setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+                                    }}
+                                    onUploadError={(error) => {
+                                        setMessage({ type: 'error', text: `Video upload failed: ${error}` });
+                                    }}
                                 />
                             </div>
                         </div>

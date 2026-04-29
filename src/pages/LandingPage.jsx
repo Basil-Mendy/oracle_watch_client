@@ -235,7 +235,7 @@ const LandingPage = () => {
                 <div className="container">
                     <div className="section-header">
                         <div>
-                            <h2>Why Oracle Watch?</h2>
+                            <h2>Why Poll Watch?</h2>
                             <p>Trusted platform for transparent election monitoring</p>
                         </div>
                     </div>

@@ -56,45 +56,89 @@ const PollingUnitPrintModal = ({ isOpen, units = [], onClose }) => {
             return;
         }
 
-        // Clone the element to avoid modifying the DOM
-        const clonedElement = element.cloneNode(true);
+        // Create a new document fragment with all content
+        const printContent = element.innerHTML;
 
-        // Remove flex constraints and overflow that html2canvas struggles with
-        clonedElement.style.display = 'block';
-        clonedElement.style.width = '100%';
-        clonedElement.style.height = 'auto';
-        clonedElement.style.overflow = 'visible';
-        clonedElement.style.maxHeight = 'none';
-        clonedElement.style.flex = 'none';
-        clonedElement.style.padding = '20px';
-        clonedElement.style.backgroundColor = '#fff';
-        clonedElement.style.color = '#000';
+        // Create HTML string with proper styling
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { font-family: Arial, sans-serif; background: #ffffff; color: #000; }
+                    .print-content { width: 100%; padding: 20px; }
+                    h2 { font-size: 18px; margin: 0 0 15px 0; text-align: center; color: #000; }
+                    .print-summary { background: #f8f9fa; padding: 10px; margin-bottom: 15px; border-radius: 3px; page-break-inside: avoid; }
+                    .print-summary p { margin: 5px 0; font-size: 12px; color: #555; }
+                    .print-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px; }
+                    .print-table thead { background: #2c3e50; color: white; }
+                    .print-table th { padding: 8px 6px; text-align: left; font-weight: 600; border: 1px solid #34495e; background: #2c3e50; color: white; }
+                    .print-table td { padding: 8px 6px; border: 1px solid #ddd; color: #000; word-break: break-word; }
+                    .print-table tbody tr { page-break-inside: avoid; }
+                    .print-table tbody tr:nth-child(odd) { background: #fff; }
+                    .print-table tbody tr:nth-child(even) { background: #f8f9fa; }
+                    code { font-family: 'Courier New', monospace; font-size: 10px; padding: 2px 4px; border-radius: 2px; display: inline-block; }
+                    code.print-code { background: #f5f5f5; color: #c7254e; }
+                    code.print-password { background: #fff3cd; color: #856404; font-weight: 600; }
+                    .print-footer { background: #fff3cd; padding: 10px; border-radius: 3px; border-left: 3px solid #ffc107; margin-top: 15px; page-break-inside: avoid; }
+                    .print-footer p { margin: 0; font-size: 11px; color: #000; }
+                    .empty-state { text-align: center; padding: 20px; }
+                    @page { margin: 10mm; }
+                    @media print {
+                        body { background: white; }
+                        .print-table { page-break-inside: avoid; }
+                        tr { page-break-inside: avoid; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="print-content">
+                    ${printContent}
+                </div>
+            </body>
+            </html>
+        `;
 
-        // Style table for proper PDF rendering
-        const table = clonedElement.querySelector('.print-table');
-        if (table) {
-            table.style.width = '100%';
-            table.style.borderCollapse = 'collapse';
-            table.style.marginTop = '15px';
-            table.style.fontSize = '12px';
-        }
+        // Create a blob from HTML
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        
+        iframe.onload = function() {
+            try {
+                const opt = {
+                    margin: [10, 10, 10, 10],
+                    filename: `Polling_Units_Credentials_${new Date().getTime()}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: 'avoid', avoid: 'tr' }
+                };
 
-        // Ensure table rows are visible
-        const rows = clonedElement.querySelectorAll('tr');
-        rows.forEach(row => {
-            row.style.pageBreakInside = 'avoid';
-        });
-
-        const opt = {
-            margin: [10, 10, 10, 10],
-            filename: `Polling_Units_Credentials_${new Date().getTime()}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: 'auto', avoid: ['tr'] }
+                // Get the HTML element from iframe
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                html2pdf().set(opt).from(iframeDoc.body).save();
+            } finally {
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                    URL.revokeObjectURL(url);
+                }, 500);
+            }
         };
 
-        html2pdf().set(opt).from(clonedElement).save();
+        document.body.appendChild(iframe);
     };
 
     const resetFilters = () => {

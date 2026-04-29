@@ -38,7 +38,7 @@ const Header = () => {
                             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MapPin size={24} /></span>
                         </div>
                         <div className="logo-text">
-                            <span className="logo-title">Oracle Watch</span>
+                            <span className="logo-title">Poll Watch</span>
                             <span className="logo-subtitle">Election Results Platform</span>
                             {isAuthenticated && getUserTypeLabel() && (
                                 <span className="user-type-badge">{getUserTypeLabel()}</span>

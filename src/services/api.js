@@ -5,7 +5,7 @@ import axios from 'axios';
 // Development: Uses local .env file or falls back to localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-console.log("🚀 Oracle Watch API Base:", API_BASE_URL);
+console.log("🚀 Poll Watch API Base:", API_BASE_URL);
 
 const api = axios.create({
     baseURL: API_BASE_URL,
