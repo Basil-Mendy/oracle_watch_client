@@ -72,7 +72,7 @@ const PollingUnitPrintModal = ({ isOpen, units = [], onClose }) => {
 
             // Clone the print element
             const clone = element.cloneNode(true);
-            
+
             // Apply comprehensive styles to ensure rendering
             const style = document.createElement('style');
             style.textContent = `
@@ -133,7 +133,7 @@ const PollingUnitPrintModal = ({ isOpen, units = [], onClose }) => {
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Failed to generate PDF. Please try again.');
-            
+
             // Ensure cleanup even on error
             const containers = document.querySelectorAll('div[style*="z-index: -9999"]');
             containers.forEach(container => {
