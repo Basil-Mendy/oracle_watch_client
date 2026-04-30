@@ -5,7 +5,7 @@ import Header from '../components/Common/Header';
 import Footer from '../components/Common/Footer';
 import ElectionVoteForm from '../components/PollingUnit/ElectionVoteForm';
 import ImageUploadWidget from '../components/PollingUnit/ImageUploadWidget';
-import VideoRecorder from '../components/PollingUnit/VideoRecorder';
+import LiveStreamWidget from '../components/PollingUnit/LiveStreamWidget';
 import CommentsSection from '../components/PollingUnit/CommentsSection';
 import SubmissionStatusCard from '../components/PollingUnit/SubmissionStatusCard';
 import { ArrowLeft, Clock, Radio, Calendar, Users, CheckCircle, AlertCircle, Upload, Loader, Camera, MessageSquare, Video, BarChart3, Zap } from 'lucide-react';
@@ -445,22 +445,9 @@ const PollingUnitDashboard = () => {
                                 </div>
                             </div>
                             <div className="group-content">
-                                <VideoRecorder
+                                <LiveStreamWidget
+                                    electionId={selectedElection}
                                     pollingUnitId={user?.unit_id}
-                                    pollingUnitName={user?.polling_unit_name}
-                                    lgaId={user?.lga_id}
-                                    lgaName={user?.lga_name}
-                                    wardId={user?.ward_id}
-                                    wardName={user?.ward_name}
-                                    cloudinaryCloudName={process.env.REACT_APP_CLOUDINARY_CLOUD_NAME}
-                                    cloudinaryUploadPreset={process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET}
-                                    onUploadSuccess={(data) => {
-                                        setMessage({ type: 'success', text: 'Video submitted successfully! ✅' });
-                                        setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-                                    }}
-                                    onUploadError={(error) => {
-                                        setMessage({ type: 'error', text: `Video upload failed: ${error}` });
-                                    }}
                                 />
                             </div>
                         </div>

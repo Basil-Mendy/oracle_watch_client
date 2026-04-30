@@ -26,6 +26,8 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
     const fileInputRef = useRef(null);
     const timerInterval = useRef(null);
     const mediaStream = useRef(null);
+    const mediaRecorder = useRef(null);
+    const recordedChunks = useRef([]);
 
     // Simulate stream timer
     useEffect(() => {
@@ -59,33 +61,84 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
     const handleStartLive = async () => {
         try {
             setError('');
+            recordedChunks.current = [];
             setIsStreaming(true);
+            setStreamTime(0);
 
-            // Request camera permission
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-                    audio: true
-                });
-
-                mediaStream.current = stream;
-
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-
-                setIsLive(true);
-            } else {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 throw new Error('Your browser does not support live streaming');
             }
+
+            console.log('Requesting camera access...');
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user'
+                },
+                audio: true
+            });
+
+            console.log('Camera access granted. Stream tracks:', stream.getTracks().length);
+            mediaStream.current = stream;
+
+            // Attach stream to video element
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                console.log('Stream attached to video element');
+            }
+
+            // Initialize MediaRecorder
+            let mimeType = 'video/webm;codecs=vp9';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                console.log('vp9 not supported, trying vp8');
+                mimeType = 'video/webm;codecs=vp8';
+            }
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                console.log('vp8 not supported, trying webm');
+                mimeType = 'video/webm';
+            }
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                console.log('webm not supported, trying default');
+                mimeType = '';
+            }
+
+            console.log('Using MIME type:', mimeType || 'browser default');
+
+            const options = mimeType ? { mimeType, videoBitsPerSecond: 2500000 } : { videoBitsPerSecond: 2500000 };
+            mediaRecorder.current = new MediaRecorder(stream, options);
+
+            console.log('MediaRecorder created');
+
+            mediaRecorder.current.ondataavailable = (event) => {
+                console.log('Data available:', event.data.size, 'bytes');
+                if (event.data.size > 0) {
+                    recordedChunks.current.push(event.data);
+                }
+            };
+
+            mediaRecorder.current.onerror = (event) => {
+                console.error('MediaRecorder error:', event.error);
+                setError(`Recording error: ${event.error}`);
+            };
+
+            mediaRecorder.current.start(1000);
+            console.log('Recording started, will collect data every 1 second');
+            setIsLive(true);
         } catch (err) {
-            console.error('Error accessing camera:', err);
-            setError(
-                err.name === 'NotAllowedError'
-                    ? 'Camera permission denied. Please allow access to camera.'
-                    : 'Could not access camera. Please check permissions.'
-            );
+            console.error('Error in handleStartLive:', err);
             setIsStreaming(false);
+            setIsLive(false);
+
+            if (err.name === 'NotAllowedError') {
+                setError('❌ Camera permission denied. Please allow access to your camera in browser settings.');
+            } else if (err.name === 'NotFoundError') {
+                setError('❌ No camera device found. Please check your camera connection.');
+            } else if (err.name === 'NotReadableError') {
+                setError('❌ Camera is already in use by another application.');
+            } else {
+                setError(`❌ ${err.message || 'Could not access camera'}`);
+            }
         }
     };
 
@@ -102,6 +155,24 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
             setIsStreaming(false);
             setIsLive(false);
 
+            // Create a promise that resolves when recording stops
+            const stopRecording = new Promise((resolve) => {
+                if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
+                    mediaRecorder.current.onstop = () => {
+                        resolve();
+                    };
+                    mediaRecorder.current.stop();
+                } else {
+                    resolve();
+                }
+            });
+
+            // Wait for recording to stop
+            await stopRecording;
+
+            // Give it a moment to collect all chunks
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             // Stop all media tracks
             if (mediaStream.current) {
                 mediaStream.current.getTracks().forEach(track => track.stop());
@@ -115,22 +186,39 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
 
             setUseFloatingWindow(false);
 
-            // Save stream as saved video
-            if (streamTime > 0) {
-                const newStream = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    title: `Live Stream - ${new Date().toLocaleTimeString()}`,
-                    duration: streamTime,
-                    timestamp: new Date().toLocaleString(),
-                    url: '#' // In production, would be actual video URL
-                };
+            // Create blob from recorded chunks
+            console.log('Recorded chunks:', recordedChunks.current.length);
 
-                setSavedStreams(prev => [newStream, ...prev]);
-                setStreamTime(0);
+            if (recordedChunks.current.length > 0 && streamTime > 0) {
+                const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
+                console.log('Blob size:', blob.size, 'bytes');
+
+                if (blob.size === 0) {
+                    setError('Recording failed: No video data captured. Please try again.');
+                } else {
+                    const videoUrl = URL.createObjectURL(blob);
+
+                    const newStream = {
+                        id: Math.random().toString(36).substr(2, 9),
+                        title: `Live Stream - ${new Date().toLocaleTimeString()}`,
+                        duration: streamTime,
+                        timestamp: new Date().toLocaleString(),
+                        url: videoUrl,
+                        blob: blob,
+                        size: (blob.size / 1024 / 1024).toFixed(2)
+                    };
+
+                    setSavedStreams(prev => [newStream, ...prev]);
+                    recordedChunks.current = [];
+                    setStreamTime(0);
+                    setError('');
+                }
+            } else {
+                setError(`No video was recorded. Chunks: ${recordedChunks.current.length}, Time: ${streamTime}s`);
             }
         } catch (err) {
             console.error('Error stopping stream:', err);
-            setError('Error stopping stream');
+            setError('Error stopping stream: ' + err.message);
         }
     };
 
@@ -229,6 +317,66 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
         }
     };
 
+    const submitSavedStreams = async () => {
+        if (savedStreams.length === 0) {
+            setError('No streams to submit');
+            return;
+        }
+
+        setSubmittingVideos(true);
+        setError('');
+
+        try {
+            const password = sessionStorage.getItem('polling_unit_password');
+            const unitId = user?.unit_id;
+
+            if (!password) {
+                throw new Error('⚠️ Session expired. Please log in again.');
+            }
+
+            if (!unitId) {
+                throw new Error('⚠️ User not authenticated. Unit ID missing.');
+            }
+
+            if (!electionId) {
+                throw new Error('⚠️ No election selected.');
+            }
+
+            console.log('🎬 Uploading stream with credentials:', {
+                unitId,
+                passwordLength: password.length,
+                electionId,
+                streamCount: savedStreams.length
+            });
+
+            // Upload each saved stream
+            for (const stream of savedStreams) {
+                if (stream.blob) {
+                    const file = new File([stream.blob], `stream_${stream.id}.webm`, { type: 'video/webm' });
+                    console.log(`📤 Uploading: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+                    await resultService.uploadMedia(unitId, password, electionId, file, 'video');
+                    console.log(`✅ Stream uploaded successfully`);
+                }
+            }
+
+            setVideoSubmitMessage({ type: 'success', text: `${savedStreams.length} stream(s) submitted successfully!` });
+            setTimeout(() => {
+                setSavedStreams([]);
+                setVideoSubmitMessage('');
+            }, 2000);
+        } catch (error) {
+            console.error('❌ Stream submission error:', error);
+            const errorMsg = error.response?.data?.error || error.message || 'Failed to submit streams';
+            if (error.response?.status === 401) {
+                setError(`❌ Authentication failed (401): ${errorMsg}. Check your login credentials.`);
+            } else {
+                setError(`❌ ${errorMsg}`);
+            }
+        } finally {
+            setSubmittingVideos(false);
+        }
+    };
+
     return (
         <div className="live-stream-widget">
             <div className="stream-instructions">
@@ -289,6 +437,7 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
                         ref={videoRef}
                         autoPlay
                         muted
+                        playsInline
                         className="video-preview"
                     />
                     <div className="video-overlay">
@@ -321,27 +470,80 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
 
                     <div className="streams-list">
                         {savedStreams.map((stream, index) => (
-                            <div key={stream.id} className="stream-item">
-                                <div className="stream-number">{index + 1}</div>
-                                <div className="stream-details">
-                                    <div className="stream-title">{stream.title}</div>
-                                    <div className="stream-meta">
-                                        <span>{formatTime(stream.duration)}</span>
-                                        <span className="separator">•</span>
+                            <div key={stream.id} className="stream-item" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#fff', border: '1px solid #e0e0e0', borderRadius: '4px', marginBottom: '8px' }}>
+                                <div className="stream-number" style={{ minWidth: '24px', fontWeight: 'bold', color: '#007bff' }}>{index + 1}</div>
+                                <div className="stream-details" style={{ flex: 1 }}>
+                                    <div className="stream-title" style={{ fontWeight: 600, marginBottom: '4px' }}>{stream.title}</div>
+                                    <div className="stream-meta" style={{ fontSize: '12px', color: '#7f8c8d' }}>
+                                        <span>Duration: {formatTime(stream.duration)}</span>
+                                        <span className="separator"> • </span>
+                                        <span>Size: {stream.size} MB</span>
+                                        <span className="separator"> • </span>
                                         <span>{stream.timestamp}</span>
                                     </div>
                                 </div>
                                 <button
                                     type="button"
+                                    className="btn-play"
+                                    onClick={() => {
+                                        const a = document.createElement('a');
+                                        a.href = stream.url;
+                                        a.target = '_blank';
+                                        a.click();
+                                    }}
+                                    title="Play stream"
+                                    style={{ padding: '6px 12px', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '8px' }}
+                                >
+                                    ▶
+                                </button>
+                                <button
+                                    type="button"
                                     className="btn-delete"
                                     onClick={() => handleDeleteStream(stream.id)}
                                     title="Delete stream"
+                                    style={{ padding: '6px 12px', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                 >
                                     <Trash2 size={16} />
                                 </button>
                             </div>
                         ))}
                     </div>
+
+                    {/* Submit Saved Streams Button */}
+                    <button
+                        type="button"
+                        className="btn btn-success"
+                        onClick={submitSavedStreams}
+                        disabled={submittingVideos || savedStreams.length === 0}
+                        style={{
+                            width: '100%',
+                            marginTop: '12px',
+                            padding: '12px',
+                            backgroundColor: submittingVideos || savedStreams.length === 0 ? '#ccc' : '#28a745',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: submittingVideos || savedStreams.length === 0 ? 'not-allowed' : 'pointer',
+                            opacity: submittingVideos || savedStreams.length === 0 ? 0.6 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            fontWeight: 600
+                        }}
+                    >
+                        {submittingVideos ? (
+                            <>
+                                <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                                Submitting Streams...
+                            </>
+                        ) : (
+                            <>
+                                <Upload size={16} />
+                                Submit {savedStreams.length} Stream{savedStreams.length > 1 ? 's' : ''}
+                            </>
+                        )}
+                    </button>
                 </div>
             )}
 
