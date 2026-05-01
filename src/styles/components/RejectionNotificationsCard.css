@@ -1,0 +1,375 @@
+.rejection-notifications-card {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+    border: 2px solid #ff6b6b;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.15);
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Card Header */
+.rejection-notifications-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 16px;
+}
+
+.rejection-notifications-card .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.rejection-notifications-card .alert-icon {
+    color: #ff6b6b;
+    flex-shrink: 0;
+}
+
+.rejection-notifications-card .header-left h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #d32f2f;
+    line-height: 1.2;
+}
+
+.rejection-notifications-card .header-left p {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    color: #f57c00;
+    font-weight: 500;
+}
+
+/* Dismiss Button */
+.rejection-notifications-card .btn-dismiss {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: #ff6b6b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.rejection-notifications-card .btn-dismiss:hover {
+    background-color: rgba(255, 107, 107, 0.1);
+    color: #d32f2f;
+}
+
+.rejection-notifications-card .btn-dismiss:active {
+    transform: scale(0.95);
+}
+
+/* Rejections List */
+.rejection-notifications-card .rejections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+/* Individual Rejection Item */
+.rejection-notifications-card .rejection-item {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 107, 107, 0.2);
+    transition: all 0.2s ease;
+}
+
+.rejection-notifications-card .rejection-item:hover {
+    border-color: rgba(255, 107, 107, 0.4);
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.1);
+}
+
+/* Rejection Header */
+.rejection-notifications-card .rejection-header {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.rejection-notifications-card .rejection-header:hover {
+    background-color: rgba(255, 107, 107, 0.05);
+}
+
+.rejection-notifications-card .rejection-meta {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.rejection-notifications-card .election-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rejection-notifications-card .election-info h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.rejection-notifications-card .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.rejection-notifications-card .status-badge.rejection-badge {
+    background-color: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ef5350;
+}
+
+.rejection-notifications-card .rejection-timestamp {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+}
+
+.rejection-notifications-card .rejection-timestamp svg {
+    flex-shrink: 0;
+}
+
+/* Expansion Toggle */
+.rejection-notifications-card .expansion-toggle {
+    display: flex;
+    align-items: center;
+    margin-left: 16px;
+}
+
+.rejection-notifications-card .toggle-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: #ff6b6b;
+    font-size: 12px;
+    font-weight: bold;
+    transition: transform 0.3s ease;
+}
+
+.rejection-notifications-card .toggle-arrow[data-expanded="true"] {
+    transform: rotate(180deg);
+}
+
+/* Rejection Details */
+.rejection-notifications-card .rejection-details {
+    background-color: #fafafa;
+    border-top: 1px solid rgba(255, 107, 107, 0.2);
+    padding: 16px;
+    animation: expandDown 0.3s ease-out;
+}
+
+@keyframes expandDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+
+    to {
+        opacity: 1;
+        max-height: 500px;
+    }
+}
+
+.rejection-notifications-card .details-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.rejection-notifications-card .details-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rejection-notifications-card .details-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rejection-notifications-card .rejection-reason {
+    margin: 0;
+    padding: 12px;
+    background-color: white;
+    border-left: 3px solid #ff6b6b;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.rejection-notifications-card .rejected-by-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.rejection-notifications-card .rejected-by-info svg {
+    color: #ff6b6b;
+}
+
+.rejection-notifications-card .rejection-datetime {
+    display: inline-block;
+    padding: 6px 10px;
+    background-color: white;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #666;
+    font-family: 'Courier New', monospace;
+}
+
+.rejection-notifications-card .action-hint {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background-color: #fff3cd;
+    border-left: 3px solid #ffc107;
+    border-radius: 4px;
+}
+
+.rejection-notifications-card .action-hint p {
+    margin: 0;
+    font-size: 13px;
+    color: #856404;
+    line-height: 1.4;
+}
+
+/* Card Footer */
+.rejection-notifications-card .card-footer {
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.rejection-notifications-card .footer-message {
+    margin: 0;
+    font-size: 13px;
+    color: #d32f2f;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .rejection-notifications-card {
+        padding: 16px;
+        margin: 16px 0;
+    }
+
+    .rejection-notifications-card .header-left {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .rejection-notifications-card .rejection-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .rejection-notifications-card .rejection-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .rejection-notifications-card .election-info {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .rejection-notifications-card .expansion-toggle {
+        width: 100%;
+        justify-content: flex-start;
+        margin-left: 0;
+        margin-top: 8px;
+    }
+
+    .rejection-notifications-card .rejection-details {
+        padding: 12px;
+    }
+
+    .rejection-notifications-card .rejection-reason {
+        font-size: 13px;
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .rejection-notifications-card {
+        padding: 12px;
+        margin: 12px 0;
+        border-radius: 8px;
+    }
+
+    .rejection-notifications-card .alert-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .rejection-notifications-card .header-left h2 {
+        font-size: 16px;
+    }
+
+    .rejection-notifications-card .header-left p {
+        font-size: 12px;
+    }
+
+    .rejection-notifications-card .rejection-header {
+        padding: 12px;
+    }
+
+    .rejection-notifications-card .election-info h3 {
+        font-size: 15px;
+    }
+
+    .rejection-notifications-card .details-label {
+        font-size: 12px;
+    }
+}

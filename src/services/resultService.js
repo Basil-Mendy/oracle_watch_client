@@ -14,6 +14,22 @@ export const resultService = {
             results, // Array of {party_id, vote_count}
         }),
 
+    // Submit results with EC8A form image (approval workflow)
+    submitWithEC8A: (unitId, password, electionId, voteData, ec8aImage) => {
+        const formData = new FormData();
+        formData.append('unit_id', unitId);
+        formData.append('password', password);
+        formData.append('election_id', electionId);
+        formData.append('vote_data', JSON.stringify(voteData)); // {party_id: vote_count}
+        if (ec8aImage) {
+            formData.append('ec8a_form_image', ec8aImage);
+        }
+
+        return api.post('/results/submit-with-ec8a/', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
+
     uploadMedia: (unitId, password, electionId, file, fileType) => {
         const formData = new FormData();
         formData.append('unit_id', unitId);
@@ -65,6 +81,22 @@ export const resultService = {
     bulkDownloadVideos: (requestData) =>
         api.post('/results/bulk-download-videos/', requestData, {
             responseType: 'blob'
+        }),
+
+    // Live Stream Session Management
+    startLiveStream: (unitId, password, electionId) =>
+        api.post('/results/start-live-stream/', {
+            unit_id: unitId,
+            password,
+            election_id: electionId,
+        }),
+
+    endLiveStream: (unitId, password, streamId, durationSeconds) =>
+        api.post('/results/end-live-stream/', {
+            unit_id: unitId,
+            password,
+            stream_id: streamId,
+            duration_seconds: durationSeconds,
         }),
 
     // Public Result Retrieval

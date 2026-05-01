@@ -27,30 +27,64 @@ const PollingUnitDashboard = () => {
     // Submission states for each group
     const [voteSubmitting, setVoteSubmitting] = useState(false);
     const [mediaSubmitting, setMediaSubmitting] = useState(false);
+    const [liveStreamSubmitting, setLiveStreamSubmitting] = useState(false);
     const [voteSubmitted, setVoteSubmitted] = useState(false);
-    const [mediaSubmitted, setMediaSubmitted] = useState(false);
+    const [commentSubmitted, setCommentSubmitted] = useState(false);
 
-    // Load elections on component mount and when returning from detail view
+    // Network resilience states
+    const [pendingVoteSubmission, setPendingVoteSubmission] = useState(null);
+    const [pendingCommentSubmission, setPendingCommentSubmission] = useState(null);
+    const [networkStatus, setNetworkStatus] = useState('online');
+
+    // Load elections on component mount
     useEffect(() => {
         loadElections();
     }, [loadElections]);
 
-    // Auto-refresh elections every 30 seconds to catch status changes (upcoming → active)
+    // Auto-refresh elections every 30 seconds to catch status changes
     useEffect(() => {
         const interval = setInterval(() => {
             loadElections();
-        }, 30000); // Refresh every 30 seconds
+        }, 30000);
 
         return () => clearInterval(interval);
     }, [loadElections]);
 
+    // Monitor network status
+    useEffect(() => {
+        const handleOnline = () => {
+            setNetworkStatus('online');
+            // Retry pending submissions when network comes back
+            if (pendingVoteSubmission) {
+                retryVoteSubmission();
+            }
+            if (pendingCommentSubmission) {
+                retryCommentSubmission();
+            }
+        };
+
+        const handleOffline = () => {
+            setNetworkStatus('offline');
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [pendingVoteSubmission, pendingCommentSubmission]);
+
     // Fetch submission status when election is selected
+    // Rejection status is now displayed inline in SubmissionStatusCard
     useEffect(() => {
         if (selectedElection && user?.unit_id) {
             setLoadingStatus(true);
             const password = sessionStorage.getItem('polling_unit_password');
 
             if (password) {
+                // Fetch submission status (includes approval_status and rejection_reason)
                 resultService
                     .getSubmissionStatus(user.unit_id, password, selectedElection)
                     .then(response => {
@@ -69,6 +103,27 @@ const PollingUnitDashboard = () => {
         }
     }, [selectedElection, user?.unit_id]);
 
+    // Auto-refresh submission status every 30 seconds to check for approval/rejection updates
+    useEffect(() => {
+        if (!selectedElection || !user?.unit_id) return;
+
+        const interval = setInterval(() => {
+            const password = sessionStorage.getItem('polling_unit_password');
+            if (password) {
+                resultService
+                    .getSubmissionStatus(user.unit_id, password, selectedElection)
+                    .then(response => {
+                        setSubmissionStatus(response.data);
+                    })
+                    .catch(error => {
+                        console.error('Error auto-refreshing submission status:', error);
+                    });
+            }
+        }, 30000); // Refresh every 30 seconds
+
+        return () => clearInterval(interval);
+    }, [selectedElection, user?.unit_id]);
+
     const handleElectionSelect = (electionId) => {
         setSelectedElection(electionId);
         if (electionId) {
@@ -79,7 +134,7 @@ const PollingUnitDashboard = () => {
         setVoteData({});
         setImages([]);
         setComments('');
-        setMessage({ type: '', text: '' });  // Remove preRecordedVideos from reset
+        setMessage({ type: '', text: '' });
     };
 
     const getCurrentElection = () => {
@@ -91,25 +146,115 @@ const PollingUnitDashboard = () => {
             ...prev,
             [partyId]: votes
         }));
-        // Reset voteSubmitted flag to allow resubmission when votes are changed
         setVoteSubmitted(false);
     };
 
     const handleImagesUpdate = (updatedImages) => {
         setImages(updatedImages);
-        // Reset mediaSubmitted flag to allow resubmission of additional media
         setMediaSubmitted(false);
     };
 
     const handleCommentsChange = (text) => {
         setComments(text);
-        // Reset mediaSubmitted flag to allow resubmission when new comments are added
-        setMediaSubmitted(false);
+        setCommentSubmitted(false);
+    };
+
+    // Retry vote submission if network was down
+    const retryVoteSubmission = async () => {
+        if (!pendingVoteSubmission) return;
+
+        setVoteSubmitting(true);
+        try {
+            const password = sessionStorage.getItem('polling_unit_password');
+            if (!password) {
+                throw new Error('Session expired. Please log in again.');
+            }
+
+            await resultService.submitWithEC8A(
+                user.unit_id,
+                password,
+                selectedElection,
+                pendingVoteSubmission.voteData,
+                pendingVoteSubmission.ec8aImage
+            );
+
+            setMessage({
+                type: 'success',
+                text: 'Results submitted for admin approval! Your EC8A form and vote counts are now in the Analytics tab awaiting review.'
+            });
+            setVoteSubmitted(true);
+            setPendingVoteSubmission(null);
+
+            setTimeout(() => {
+                setVoteData({});
+                setImages([]);
+                setVoteSubmitted(false);
+                setMessage({ type: '', text: '' });
+            }, 4000);
+        } catch (error) {
+            console.error('Retry vote submission error:', error);
+            const isNetworkError = !error.response;
+
+            if (!isNetworkError) {
+                // On server error, stop retrying
+                const serverStatusCode = error.response?.status;
+                const serverMessage = error.response?.data?.error || error.response?.data?.message || `Server error (${serverStatusCode})`;
+                setMessage({ type: 'error', text: `Submission failed: ${serverMessage}` });
+                setPendingVoteSubmission(null);
+            } else {
+                setMessage({ type: 'error', text: 'Still unable to connect. Will keep retrying when network is stable.' });
+            }
+        } finally {
+            setVoteSubmitting(false);
+        }
+    };
+
+    // Retry comment submission if network was down
+    const retryCommentSubmission = async () => {
+        if (!pendingCommentSubmission) return;
+
+        setMediaSubmitting(true);
+        try {
+            const password = sessionStorage.getItem('polling_unit_password');
+            if (!password) {
+                throw new Error('Session expired. Please log in again.');
+            }
+
+            await resultService.addComment(user.unit_id, password, selectedElection, pendingCommentSubmission);
+
+            setMessage({ type: 'success', text: 'Comment added successfully!' });
+            setCommentSubmitted(true);
+            setPendingCommentSubmission(null);
+
+            setTimeout(() => {
+                setComments('');
+                setCommentSubmitted(false);
+                setMessage({ type: '', text: '' });
+            }, 3000);
+        } catch (error) {
+            console.error('Retry comment submission error:', error);
+            const isNetworkError = !error.response;
+
+            if (!isNetworkError) {
+                const serverStatusCode = error.response?.status;
+                const serverMessage = error.response?.data?.error || error.response?.data?.message || `Server error (${serverStatusCode})`;
+                setMessage({ type: 'error', text: `Failed: ${serverMessage}` });
+                setPendingCommentSubmission(null);
+            } else {
+                setMessage({ type: 'error', text: 'Still unable to connect. Will keep retrying when network is stable.' });
+            }
+        } finally {
+            setMediaSubmitting(false);
+        }
     };
 
     const submitVoteCount = async () => {
         if (Object.keys(voteData).length === 0) {
             setMessage({ type: 'error', text: 'Please enter vote counts for at least one party' });
+            return;
+        }
+        if (images.length === 0) {
+            setMessage({ type: 'error', text: 'Please upload the EC8A form image to submit results' });
             return;
         }
         setVoteSubmitting(true);
@@ -119,26 +264,60 @@ const PollingUnitDashboard = () => {
                 throw new Error('Session expired. Please log in again.');
             }
 
-            // Convert voteData to results array format
-            const results = Object.entries(voteData).map(([partyId, voteCount]) => ({
-                party_id: partyId,
-                vote_count: parseInt(voteCount) || 0,
-            }));
+            // Submit vote counts + EC8A image together for approval
+            const ec8aImageFile = images[0]?.file; // Use first image as EC8A form
 
-            await resultService.submitResults(user.unit_id, password, selectedElection, results);
-            setMessage({ type: 'success', text: 'Vote counts submitted successfully!' });
+            await resultService.submitWithEC8A(
+                user.unit_id,
+                password,
+                selectedElection,
+                voteData,
+                ec8aImageFile
+            );
+
+            setMessage({
+                type: 'success',
+                text: 'Results submitted for admin approval! Your EC8A form and vote counts are now in the Analytics tab awaiting review.'
+            });
             setVoteSubmitted(true);
+            setPendingVoteSubmission(null);
+
+            // Clear form after successful submission
+            setTimeout(() => {
+                setVoteData({});
+                setImages([]);
+                setVoteSubmitted(false);
+                setMessage({ type: '', text: '' });
+            }, 4000);
         } catch (error) {
             console.error('Vote submission error:', error);
-            setMessage({ type: 'error', text: error.response?.data?.error || error.message || 'Failed to submit vote counts' });
+
+            // Check if it's a network error (no response) or server error (4xx, 5xx)
+            const isNetworkError = !error.response; // No response means network error
+            const serverStatusCode = error.response?.status;
+
+            // Keep the data and store pending submission for retry on network errors
+            if (isNetworkError) {
+                setPendingVoteSubmission({
+                    voteData,
+                    ec8aImage: images[0]?.file
+                });
+                setMessage({ type: 'error', text: 'Failed to submit. Your data has been saved and will retry automatically when network is stable.' });
+            } else {
+                // Server error - show specific message but keep data in form for manual retry
+                const serverMessage = error.response?.data?.error || error.response?.data?.message || `Server error (${serverStatusCode})`;
+                setMessage({ type: 'error', text: `Failed to submit: ${serverMessage}. Please review and try again.` });
+            }
         } finally {
             setVoteSubmitting(false);
         }
     };
 
+
+
     const submitMediaAndComments = async () => {
-        if (images.length === 0 && comments.trim().length === 0) {
-            setMessage({ type: 'error', text: 'Please upload at least one image or add comments' });
+        if (comments.trim().length === 0) {
+            setMessage({ type: 'error', text: 'Please add a comment' });
             return;
         }
         setMediaSubmitting(true);
@@ -148,27 +327,32 @@ const PollingUnitDashboard = () => {
                 throw new Error('Session expired. Please log in again.');
             }
 
-            // Upload images
-            for (const image of images) {
-                await resultService.uploadMedia(user.unit_id, password, selectedElection, image.file, 'image');
-            }
+            // Add comment (separate from vote submission)
+            await resultService.addComment(user.unit_id, password, selectedElection, comments);
 
-            // Add comment if provided
-            if (comments.trim().length > 0) {
-                await resultService.addComment(user.unit_id, password, selectedElection, comments);
-            }
-
-            setMessage({ type: 'success', text: 'Photos and comments submitted successfully!' });
-            setMediaSubmitted(true);
-            // Clear form for next batch of submissions
+            setMessage({ type: 'success', text: 'Comment added successfully!' });
+            setCommentSubmitted(true);
+            setPendingCommentSubmission(null);
             setTimeout(() => {
-                setImages([]);
                 setComments('');
-                setMediaSubmitted(false);
-            }, 2000);
+                setCommentSubmitted(false);
+                setMessage({ type: '', text: '' });
+            }, 3000);
         } catch (error) {
-            console.error('Media submission error:', error);
-            setMessage({ type: 'error', text: error.response?.data?.error || error.message || 'Failed to submit photos and comments' });
+            console.error('Comment submission error:', error);
+
+            // Check if it's a network error or server error
+            const isNetworkError = !error.response;
+            const serverStatusCode = error.response?.status;
+
+            // Keep the data in form - store for retry only on network errors
+            if (isNetworkError) {
+                setPendingCommentSubmission(comments);
+                setMessage({ type: 'error', text: 'Failed to add comment. Your comment has been saved and will retry automatically when network is stable.' });
+            } else {
+                const serverMessage = error.response?.data?.error || error.response?.data?.message || `Server error (${serverStatusCode})`;
+                setMessage({ type: 'error', text: `Failed to add comment: ${serverMessage}. Please try again.` });
+            }
         } finally {
             setMediaSubmitting(false);
         }
@@ -358,80 +542,103 @@ const PollingUnitDashboard = () => {
 
                 {isActive ? (
                     <div className="detail-forms">
-                        {/* Vote Counts Section */}
+                        {/* Vote Counts & EC8A Submission Section */}
                         <div className="form-group-card">
                             <div className="group-header">
                                 <div className="header-content">
-                                    <h2><BarChart3 size={24} className="inline-icon" />Vote Counts</h2>
-                                    <p>Enter the number of votes received by each participating party</p>
+                                    <h2><BarChart3 size={24} className="inline-icon" />Vote Counts & EC8A Form</h2>
+                                    <p>Enter vote counts and upload the signed EC8A form for admin approval</p>
                                 </div>
                                 <div className="group-status">
                                     {voteSubmitted && <span className="status-badge status-success"><CheckCircle size={16} className="inline-icon" /> Submitted</span>}
-                                    {!voteSubmitted && Object.keys(voteData).length > 0 && <span className="status-badge status-pending"><Loader size={16} className="inline-icon" /> Pending</span>}
+                                    {!voteSubmitted && <span className="status-badge status-not-submitted">Not Submitted</span>}
+                                    {pendingVoteSubmission && <span className="status-badge status-pending-retry"><AlertCircle size={16} className="inline-icon" /> Retrying...</span>}
+                                </div>
+                            </div>
+
+                            {/* Vote Entry */}
+                            <div className="group-content">
+                                <div className="media-subsection">
+                                    <div className="subsection-header">
+                                        <h3><BarChart3 size={20} className="inline-icon" />Vote Counts</h3>
+                                        <span className="subsection-label">(Required)</span>
+                                    </div>
+                                    <p className="subsection-description">
+                                        Enter the number of votes received by each participating party. These votes will be cross-verified with your EC8A form image.
+                                    </p>
+                                    <ElectionVoteForm
+                                        election={getCurrentElection()}
+                                        voteData={voteData}
+                                        onVoteChange={handleVoteChange}
+                                    />
+                                </div>
+
+                                {/* EC8A Image Upload */}
+                                <div className="media-subsection">
+                                    <div className="subsection-header">
+                                        <h3><Camera size={20} className="inline-icon" />EC8A Form Photo</h3>
+                                        <span className="subsection-label">(Required - 1 photo)</span>
+                                    </div>
+                                    <p className="subsection-description">
+                                        Upload <strong>one clear photo</strong> of the officially signed EC8A form. This image must show all vote counts and serve as proof of results.
+                                    </p>
+                                    <ImageUploadWidget
+                                        images={images}
+                                        onImagesUpdate={handleImagesUpdate}
+                                        maxImages={1}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="group-actions">
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={submitVoteCount}
+                                    disabled={voteSubmitting || Object.keys(voteData).length === 0 || images.length === 0}
+                                >
+                                    {voteSubmitting ? (
+                                        <><Loader size={16} className="inline-icon" /> Submitting for Approval...</>
+                                    ) : voteSubmitted ? (
+                                        <><CheckCircle size={16} className="inline-icon" /> Submitted for Review</>
+                                    ) : (
+                                        <><Upload size={16} className="inline-icon" /> Submit Vote Counts & EC8A Form</>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Comments Section (Optional) */}
+                        <div className="form-group-card">
+                            <div className="group-header">
+                                <div className="header-content">
+                                    <h2><MessageSquare size={24} className="inline-icon" />Additional Comments</h2>
+                                    <p>Add any observations or notes about the polling process (optional)</p>
+                                </div>
+                                <div className="group-status">
+                                    {commentSubmitted && <span className="status-badge status-success"><CheckCircle size={16} className="inline-icon" /> Submitted</span>}
+                                    {!commentSubmitted && <span className="status-badge status-not-submitted">Not Submitted</span>}
+                                    {pendingCommentSubmission && <span className="status-badge status-pending-retry"><AlertCircle size={16} className="inline-icon" /> Retrying...</span>}
                                 </div>
                             </div>
                             <div className="group-content">
-                                <ElectionVoteForm
-                                    election={currentElection}
-                                    voteData={voteData}
-                                    onVoteChange={handleVoteChange}
+                                <CommentsSection
+                                    comments={comments}
+                                    onCommentsChange={handleCommentsChange}
                                 />
                             </div>
                             <div className="group-actions">
                                 <button
                                     className="btn btn-primary"
-                                    onClick={submitVoteCount}
-                                    disabled={voteSubmitting || Object.keys(voteData).length === 0}
-                                >
-                                    {voteSubmitting ? <><Loader size={16} className="inline-icon" /> Submitting...</> : voteSubmitted ? <><CheckCircle size={16} className="inline-icon" /> Submitted</> : <><Upload size={16} className="inline-icon" /> Submit Vote Counts</>
-                                    }
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Photos & Comments Section */}
-                        <div className="form-group-card">
-                            <div className="group-header">
-                                <div className="header-content">
-                                    <h2><Camera size={24} className="inline-icon" />Evidence & Observations</h2>
-                                    <p>Upload photos and add comments about the polling process</p>
-                                </div>
-                                <div className="group-status">
-                                    {mediaSubmitted && <span className="status-badge status-success"><CheckCircle size={16} className="inline-icon" /> Submitted</span>}
-                                    {!mediaSubmitted && (images.length > 0 || comments.trim().length > 0) && <span className="status-badge status-pending"><Loader size={16} className="inline-icon" /> Pending</span>}
-                                </div>
-                            </div>
-                            <div className="group-content">
-                                <div className="media-subsection">
-                                    <div className="subsection-header">
-                                        <h3><Camera size={20} className="inline-icon" />Upload Photos</h3>
-                                        <span className="subsection-label">(Up to 10 photos)</span>
-                                    </div>
-                                    <ImageUploadWidget
-                                        images={images}
-                                        onImagesUpdate={handleImagesUpdate}
-                                        maxImages={10}
-                                    />
-                                </div>
-                                <div className="media-subsection">
-                                    <div className="subsection-header">
-                                        <h3><MessageSquare size={20} className="inline-icon" />Comments</h3>
-                                        <span className="subsection-label">(Optional)</span>
-                                    </div>
-                                    <CommentsSection
-                                        comments={comments}
-                                        onCommentsChange={handleCommentsChange}
-                                    />
-                                </div>
-                            </div>
-                            <div className="group-actions">
-                                <button
-                                    className="btn btn-primary"
                                     onClick={submitMediaAndComments}
-                                    disabled={mediaSubmitting || (images.length === 0 && comments.trim().length === 0)}
+                                    disabled={mediaSubmitting || comments.trim().length === 0}
                                 >
-                                    {mediaSubmitting ? <><Loader size={16} className="inline-icon" /> Submitting...</> : mediaSubmitted ? <><CheckCircle size={16} className="inline-icon" /> Submitted</> : <><Upload size={16} className="inline-icon" /> Submit Media & Comments</>
-                                    }
+                                    {mediaSubmitting ? (
+                                        <><Loader size={16} className="inline-icon" /> Submitting...</>
+                                    ) : commentSubmitted ? (
+                                        <><CheckCircle size={16} className="inline-icon" /> Comment Added</>
+                                    ) : (
+                                        <><Upload size={16} className="inline-icon" /> Add Comment</>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -442,6 +649,10 @@ const PollingUnitDashboard = () => {
                                 <div className="header-content">
                                     <h2><Video size={24} className="inline-icon" />Live Stream & Recording</h2>
                                     <p>Go live or record videos of the polling process</p>
+                                </div>
+                                <div className="group-status">
+                                    {liveStreamSubmitting && <span className="status-badge status-pending-retry"><Loader size={16} className="inline-icon" /> Recording...</span>}
+                                    {!liveStreamSubmitting && <span className="status-badge status-not-submitted">Optional</span>}
                                 </div>
                             </div>
                             <div className="group-content">

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import Header from '../components/Common/Header';
 import Footer from '../components/Common/Footer';
-import { BarChart3, Airplay, MapPin, CheckCircle, TrendingUp } from 'lucide-react';
+import { BarChart3, Airplay, MapPin, CheckCircle, TrendingUp, Shield } from 'lucide-react';
 import WardForm from '../components/Admin/WardForm';
 import PollingUnitForm from '../components/Admin/PollingUnitForm';
 import PartyForm from '../components/Admin/PartyForm';
 import ElectionForm from '../components/Admin/ElectionForm';
 import ResultsCenter from '../components/Admin/ResultsCenter';
+import Analytics from '../components/Admin/Analytics';
 import '../styles/pages/AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -18,6 +19,7 @@ const AdminDashboard = () => {
         { id: 'wards', label: 'Wards', icon: MapPin },
         { id: 'polling-units', label: 'Polling Units', icon: CheckCircle },
         { id: 'results', label: 'Results', icon: TrendingUp },
+        { id: 'analytics', label: 'Analytics', icon: Shield },
     ];
 
     const renderTabContent = () => {
@@ -32,6 +34,8 @@ const AdminDashboard = () => {
                 return <PollingUnitForm />;
             case 'results':
                 return <ResultsCenter />;
+            case 'analytics':
+                return <Analytics />;
             default:
                 return <ElectionForm />;
         }

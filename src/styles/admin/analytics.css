@@ -1,0 +1,822 @@
+/* Analytics Dashboard Styles */
+
+.analytics-container {
+    width: 100%;
+    padding: 20px;
+    background: #f5f5f5;
+    min-height: 100vh;
+}
+
+.analytics-header {
+    margin-bottom: 30px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.analytics-header h2 {
+    margin: 0 0 15px 0;
+    font-size: 28px;
+    color: #333;
+}
+
+/* Election Selector */
+.election-selector-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.election-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.election-select {
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #333;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    min-width: 250px;
+}
+
+.election-select:hover {
+    border-color: #999;
+}
+
+.election-select:focus {
+    outline: none;
+    border-color: #2196F3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.analytics-header .election-name {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+    font-style: italic;
+}
+
+/* No Election Selected Message */
+.no-election-selected {
+    background: white;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 60px 20px;
+    text-align: center;
+    color: #999;
+}
+
+.no-election-selected svg {
+    color: #ddd;
+    margin-bottom: 15px;
+}
+
+.no-election-selected h3 {
+    font-size: 20px;
+    color: #666;
+    margin: 15px 0 10px 0;
+}
+
+.no-election-selected p {
+    margin: 0;
+    color: #999;
+    font-size: 14px;
+}
+
+/* Statistics Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.stat-card.pending {
+    border-left-color: #ff9800;
+}
+
+.stat-card.pending .stat-number {
+    color: #ff9800;
+}
+
+.stat-card.approved {
+    border-left-color: #4caf50;
+}
+
+.stat-card.approved .stat-number {
+    color: #4caf50;
+}
+
+.stat-card.rejected {
+    border-left-color: #f44336;
+}
+
+.stat-card.rejected .stat-number {
+    color: #f44336;
+}
+
+.stat-number {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.stat-card svg {
+    opacity: 0.5;
+}
+
+/* Analytics Stats Section */
+.analytics-stats-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.analytics-stats-section h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    color: #333;
+}
+
+/* LGA Tabs Container */
+.lga-tabs-container {
+    margin-bottom: 30px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.lga-tabs {
+    display: flex;
+    gap: 5px;
+    padding: 10px;
+    background: #f9f9f9;
+    overflow-x: auto;
+    border-bottom: 2px solid #eee;
+}
+
+.lga-tab {
+    padding: 12px 16px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.lga-tab:hover {
+    border-color: #999;
+    background: #f5f5f5;
+}
+
+.lga-tab.active {
+    background: #2196F3;
+    border-color: #2196F3;
+    color: white;
+}
+
+.lga-tab .tab-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.lga-tab .tab-count {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.lga-tab .tab-status-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.lga-tab .badge-mini {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.lga-tab .badge-mini.pending {
+    background: #ffb74d;
+    color: white;
+}
+
+.lga-tab .badge-mini.approved {
+    background: #81c784;
+    color: white;
+}
+
+.lga-tab .badge-mini.rejected {
+    background: #e57373;
+    color: white;
+}
+
+.lga-tab.active .badge-mini {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* LGA Content Section */
+.lga-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* LGA Stats Section */
+.lga-stats-section {
+    margin-bottom: 30px;
+}
+
+.lga-stats-section h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 20px;
+    color: #333;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 10px;
+}
+
+/* Status Section */
+.status-section {
+    margin-bottom: 30px;
+}
+
+.status-section .section-divider {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.status-section .section-divider h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    padding-bottom: 10px;
+}
+
+/* No results message */
+.no-results-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.no-results-message svg {
+    color: #ddd;
+    margin-bottom: 15px;
+}
+
+.no-results-message p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* LGA Groups */
+.lga-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.lga-group {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.lga-header {
+    padding: 15px 20px;
+    background: #f9f9f9;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    transition: background 0.2s;
+}
+
+.lga-header:hover {
+    background: #f0f0f0;
+}
+
+.lga-info {
+    flex: 1;
+}
+
+.lga-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.lga-title svg {
+    flex-shrink: 0;
+}
+
+.lga-badge {
+    background: #ff9800;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.lga-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    gap: 5px;
+    font-size: 14px;
+    align-items: center;
+}
+
+.stat-item .label {
+    color: #666;
+}
+
+.stat-item .value {
+    font-weight: 600;
+    color: #333;
+}
+
+.stat-item .value.approved {
+    color: #4caf50;
+}
+
+.stat-item .value.rejected {
+    color: #f44336;
+}
+
+.stat-item .value.pending {
+    color: #ff9800;
+}
+
+/* Section Dividers */
+.section-divider {
+    margin-top: 40px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 3px solid #ddd;
+}
+
+.section-divider h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+}
+
+/* Status-specific Group Styles */
+.lga-group.approved-group .lga-header {
+    background: #f0f8f0;
+    border-left: 4px solid #4caf50;
+}
+
+.lga-group.approved-group .lga-badge {
+    background: #4caf50;
+}
+
+.lga-group.approved-group .lga-badge.approved {
+    background: #4caf50;
+}
+
+.lga-group.rejected-group .lga-header {
+    background: #fef0f0;
+    border-left: 4px solid #f44336;
+}
+
+.lga-group.rejected-group .lga-badge {
+    background: #f44336;
+}
+
+.lga-group.rejected-group .lga-badge.rejected {
+    background: #f44336;
+}
+
+/* Submissions List */
+.submissions-list {
+    padding: 15px;
+    background: white;
+    border-top: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.submissions-list.approved-list {
+    background: #fafbfa;
+}
+
+.submissions-list.rejected-list {
+    background: #faf9f9;
+}
+
+/* Result Item */
+.result-item {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.result-header {
+    padding: 15px;
+    background: #fafafa;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    transition: background 0.2s;
+    border-left: 4px solid #ddd;
+}
+
+.result-header:hover {
+    background: #f0f0f0;
+}
+
+.result-header.pending {
+    border-left-color: #ff9800;
+}
+
+.result-header.approved {
+    border-left-color: #4caf50;
+}
+
+.result-header.rejected {
+    border-left-color: #f44336;
+}
+
+.result-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.result-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: #333;
+}
+
+.result-title svg {
+    flex-shrink: 0;
+}
+
+.polling-unit-name {
+    color: #333;
+}
+
+.polling-unit-id {
+    color: #999;
+    font-size: 13px;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-pending {
+    background: #fff3cd;
+    color: #ff9800;
+}
+
+.badge-approved {
+    background: #d4edda;
+    color: #4caf50;
+}
+
+.badge-rejected {
+    background: #f8d7da;
+    color: #f44336;
+}
+
+.result-timestamp {
+    color: #999;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* Expanded Result Content */
+.result-expanded {
+    padding: 20px;
+    background: white;
+    border-top: 1px solid #eee;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .result-expanded {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ec8a-section,
+.vote-counts-section,
+.admin-notes {
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 6px;
+}
+
+.ec8a-section h4,
+.vote-counts-section h4,
+.admin-notes h4 {
+    margin: 0 0 15px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.ec8a-image {
+    width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.vote-counts {
+    display: grid;
+    gap: 10px;
+}
+
+.vote-count-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.party-id {
+    font-weight: 600;
+    color: #666;
+    font-size: 12px;
+}
+
+.vote-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.vote-input {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100px;
+}
+
+.admin-notes p {
+    margin: 0;
+    color: #555;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Action Buttons */
+.action-buttons {
+    grid-column: 1 / -1;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-success {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #45a049;
+}
+
+.btn-danger {
+    background: #f44336;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #da190b;
+}
+
+.btn-warning {
+    background: #ff9800;
+    color: white;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: #e68900;
+}
+
+.btn-secondary {
+    background: #999;
+    color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #777;
+}
+
+.reject-section {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex: 1;
+    min-width: 300px;
+}
+
+.reject-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.reject-input::placeholder {
+    color: #999;
+}
+
+/* Error & Loading States */
+.error-message {
+    padding: 15px;
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .lga-stats {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .result-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .result-timestamp {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .analytics-container {
+        padding: 10px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .lga-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .lga-stats {
+        width: 100%;
+    }
+
+    .lga-tabs {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .lga-tab {
+        padding: 10px 12px;
+        font-size: 12px;
+        flex: 1;
+        min-width: 120px;
+        gap: 4px;
+    }
+
+    .lga-tab .tab-name {
+        font-size: 13px;
+    }
+
+    .lga-tab .tab-count {
+        font-size: 11px;
+    }
+
+    .lga-tab .tab-status-badges {
+        gap: 4px;
+    }
+
+    .lga-tab .badge-mini {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+
+    .lga-content {
+        padding: 15px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .reject-section {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .reject-input {
+        width: 100%;
+    }
+}

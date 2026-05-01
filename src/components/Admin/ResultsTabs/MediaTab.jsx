@@ -46,6 +46,18 @@ const MediaTab = ({ electionId }) => {
         }
     }, [electionId]);
 
+    // Auto-refresh media every 30 seconds to show newly submitted content
+    useEffect(() => {
+        if (!electionId) return;
+
+        const interval = setInterval(() => {
+            console.log('🔄 Auto-refreshing media (images & comments)...');
+            fetchMedia();
+        }, 30000); // Refresh every 30 seconds
+
+        return () => clearInterval(interval);
+    }, [electionId]);
+
     const loadLGAs = async () => {
         try {
             const response = await locationService.getLGAs();
@@ -598,7 +610,8 @@ const MediaTab = ({ electionId }) => {
                                                             position: 'relative',
                                                             aspectRatio: '1',
                                                             cursor: 'pointer',
-                                                            transition: 'transform 0.3s'
+                                                            transition: 'transform 0.3s',
+                                                            border: media.is_ec8a_form ? '2px solid #ff9800' : 'none'
                                                         }}
                                                     >
                                                         <img
@@ -617,7 +630,7 @@ const MediaTab = ({ electionId }) => {
                                                             position: 'absolute',
                                                             top: '4px',
                                                             right: '4px',
-                                                            backgroundColor: '#28a745',
+                                                            backgroundColor: media.is_ec8a_form ? '#ff9800' : '#28a745',
                                                             color: '#fff',
                                                             padding: '2px 6px',
                                                             borderRadius: '3px',
@@ -627,7 +640,7 @@ const MediaTab = ({ electionId }) => {
                                                             alignItems: 'center',
                                                             gap: '2px'
                                                         }}>
-                                                            <ImageIcon size={10} /> Image
+                                                            <ImageIcon size={10} /> {media.is_ec8a_form ? 'EC8A Form' : 'Image'}
                                                         </div>
                                                         <a
                                                             href={media.image}

@@ -111,7 +111,7 @@ export const AdminVideoManagement = ({ electionId, selectedLga, selectedWard }) 
    */
   const filteredSubmittedVideos = useMemo(() => {
     return submittedVideos.filter((video) => {
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         video.polling_unit_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         video.polling_unit_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         video.ward_name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -317,9 +317,9 @@ export const AdminVideoManagement = ({ electionId, selectedLga, selectedWard }) 
                   lgaName={stream.lga_name}
                   wardName={stream.ward_name}
                   streamUrl={stream.stream_url}
-                  isLive={stream.is_live}
+                  isLive={stream.is_active}
                   duration={stream.duration}
-                  thumbnail={stream.thumbnail}
+                  thumbnail={stream.thumbnail_url}
                   onWatch={handleWatchVideo}
                   onEnd={handleEndStream}
                 />

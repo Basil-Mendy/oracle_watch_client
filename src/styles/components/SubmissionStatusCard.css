@@ -202,6 +202,42 @@
     color: #856404;
 }
 
+/* Approval Status Badges */
+.approval-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.approval-badge svg {
+    width: 14px;
+    height: 14px;
+}
+
+.approval-badge.status-approved {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.approval-badge.status-pending-approval {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.approval-badge.status-rejected {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.approval-badge.status-not-submitted {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
 /* Download Action Button */
 .download-action-button {
     display: inline-flex;
@@ -290,6 +326,81 @@
     font-weight: 700;
 }
 
+/* Rejection Reason */
+.item-rejection {
+    margin: 12px 0;
+    padding: 12px;
+    background-color: #fef5f5;
+    border-left: 3px solid #721c24;
+    border-radius: 6px;
+}
+
+.rejection-reason-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: #721c24;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+}
+
+.rejection-reason-button:hover {
+    color: #c71c22;
+}
+
+.rejection-reason-button svg {
+    width: 14px;
+    height: 14px;
+}
+
+.rejection-reason-content {
+    margin-top: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #f8d7da;
+}
+
+.rejection-reason-content p {
+    margin: 0 0 8px 0;
+    color: #721c24;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.rejection-reason-content small {
+    display: block;
+    color: #999;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+/* Combined Item */
+.submission-item.combined-item {
+    border-color: #dee2e6;
+    background: white;
+}
+
+.submission-item.combined-item.approved {
+    border-color: #28a745;
+    background: rgba(40, 167, 69, 0.02);
+}
+
+.submission-item.combined-item.pending {
+    border-color: #ffc107;
+    background: rgba(255, 193, 7, 0.02);
+}
+
+.submission-item.combined-item.rejected {
+    border-color: #dc3545;
+    background: rgba(220, 53, 69, 0.02);
+}
+
 /* Timestamp */
 .item-timestamp {
     display: flex;
@@ -369,35 +480,6 @@
     flex-shrink: 0;
 }
 
-/* Capacity Bar (for images) */
-.item-capacity {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #e9ecef;
-}
-
-.capacity-bar {
-    width: 100%;
-    height: 6px;
-    background-color: #e9ecef;
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 6px;
-}
-
-.capacity-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #17a2b8 0%, #138496 100%);
-    transition: width 0.3s ease;
-}
-
-.capacity-text {
-    display: block;
-    font-size: 11px;
-    color: #6c757d;
-    font-weight: 500;
-}
-
 /* Card Footer */
 .card-footer {
     margin-top: 16px;
@@ -432,6 +514,18 @@
 
 .legend-color.additive {
     background-color: #4caf50;
+}
+
+.legend-color.approved {
+    background-color: #28a745;
+}
+
+.legend-color.pending-approval {
+    background-color: #ffc107;
+}
+
+.legend-color.rejected {
+    background-color: #dc3545;
 }
 
 /* Responsive Design */

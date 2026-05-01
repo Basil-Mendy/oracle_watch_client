@@ -68,6 +68,20 @@ const VoteCountsTab = ({ electionId }) => {
         }
     }, [electionId, wardsFetched, puFetched]);
 
+    // Auto-refresh results every 30 seconds to show newly approved results
+    useEffect(() => {
+        if (!electionId || !wardsFetched) return;
+
+        const interval = setInterval(() => {
+            console.log('🔄 Auto-refreshing vote counts...');
+            (async () => {
+                await fetchWards();
+            })();
+        }, 30000); // Refresh every 30 seconds
+
+        return () => clearInterval(interval);
+    }, [electionId, wardsFetched]);
+
     const loadLGAs = async () => {
         try {
             console.log('🔄 Loading LGAs...');

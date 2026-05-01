@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { CheckCircle, Clock, AlertCircle, Image as ImageIcon, Video, MessageSquare, BarChart3, Download } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, Image as ImageIcon, Video, MessageSquare, BarChart3, Download, Camera } from 'lucide-react';
 import BulkDownloadModal from '../Common/BulkDownloadModal';
 import '../../styles/components/SubmissionStatusCard.css';
 
 const SubmissionStatusCard = ({ submissionStatus, pollingUnitId, electionId }) => {
     const [showBulkDownloadModal, setShowBulkDownloadModal] = useState(false);
+    const [showRejectionReason, setShowRejectionReason] = useState(false);
 
     if (!submissionStatus) {
         return (
@@ -40,9 +41,105 @@ const SubmissionStatusCard = ({ submissionStatus, pollingUnitId, electionId }) =
         });
     };
 
-    const SubmissionItem = ({ submission, title, icon: Icon, type }) => {
+    // Get approval status for vote counts
+    const voteApprovalStatus = submissions.vote_counts?.approval_status;
+    const voteRejectionReason = submissions.vote_counts?.rejection_reason;
+
+    const getApprovalStatusBadge = (status) => {
+        switch (status) {
+            case 'approved':
+                return { class: 'status-approved', text: 'Submitted - Approved', icon: CheckCircle };
+            case 'pending':
+                return { class: 'status-pending-approval', text: 'Submitted - Pending Approval', icon: Clock };
+            case 'rejected':
+                return { class: 'status-rejected', text: 'Rejected', icon: AlertCircle };
+            default:
+                return { class: 'status-not-submitted', text: 'Not submitted', icon: AlertCircle };
+        }
+    };
+
+    const VoteAndImageItem = ({ voteSubmission, imageSubmission }) => {
+        const statusInfo = getApprovalStatusBadge(voteApprovalStatus);
+        const StatusIcon = statusInfo.icon;
+
+        return (
+            <div className={`submission-item combined-item ${voteApprovalStatus || 'not-submitted'}`}>
+                <div className="item-header">
+                    <div className="item-title">
+                        <BarChart3 size={20} className="item-icon" />
+                        <span>Vote Count & EC8A Form</span>
+                    </div>
+                    <div className="item-actions">
+                        {imageSubmission.count > 0 && (
+                            <button
+                                className="download-action-button"
+                                onClick={() => setShowBulkDownloadModal(true)}
+                                title="Download EC8A form image"
+                            >
+                                <Download size={16} />
+                            </button>
+                        )}
+                        <span className={`item-badge approval-badge ${statusInfo.class}`}>
+                            <StatusIcon size={16} />
+                            {statusInfo.text}
+                        </span>
+                    </div>
+                </div>
+
+                {voteApprovalStatus === 'rejected' && voteRejectionReason && (
+                    <div className="item-rejection">
+                        <button
+                            className="rejection-reason-button"
+                            onClick={() => setShowRejectionReason(!showRejectionReason)}
+                        >
+                            <AlertCircle size={14} />
+                            View rejection reason
+                        </button>
+                        {showRejectionReason && (
+                            <div className="rejection-reason-content">
+                                <p>{voteRejectionReason}</p>
+                                <small>You can submit a new vote count & EC8A form to reapply for approval</small>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {voteSubmission.submitted && (
+                    <div className="item-timestamp">
+                        <Clock size={14} />
+                        <span>Submitted: {formatTimestamp(voteSubmission.submitted_at)}</span>
+                    </div>
+                )}
+
+                {voteSubmission.details && voteSubmission.details.length > 0 && (
+                    <div className="item-details">
+                        <div className="details-label">Current vote counts:</div>
+                        <div className="vote-details">
+                            {voteSubmission.details.map((detail, idx) => (
+                                <div key={idx} className="vote-detail">
+                                    <span className="party-name">{detail.party_acronym}</span>
+                                    <span className="vote-count">{detail.vote_count} votes</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {imageSubmission.count > 0 && imageSubmission.first_submitted_at && (
+                    <div className="item-details">
+                        <div className="details-timeline">
+                            <span className="detail-first">
+                                <Camera size={12} /> EC8A Form: {formatTimestamp(imageSubmission.first_submitted_at)}
+                            </span>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const SimpleSubmissionItem = ({ submission, title, icon: Icon, type }) => {
         const isSubmitted = submission.submitted;
-        const mergeBehavior = submission.merge_behavior;
 
         return (
             <div className={`submission-item ${isSubmitted ? 'submitted' : 'pending'}`}>
@@ -55,7 +152,7 @@ const SubmissionStatusCard = ({ submissionStatus, pollingUnitId, electionId }) =
                         )}
                     </div>
                     <div className="item-actions">
-                        {isSubmitted && (type === 'images' || type === 'videos') && submission.count > 0 && (
+                        {isSubmitted && (type === 'videos') && submission.count > 0 && (
                             <button
                                 className="download-action-button"
                                 onClick={() => setShowBulkDownloadModal(true)}
@@ -73,29 +170,10 @@ const SubmissionStatusCard = ({ submissionStatus, pollingUnitId, electionId }) =
                         {!isSubmitted && (
                             <span className="item-badge pending-badge">
                                 <AlertCircle size={16} />
-                                Not submitted
+                                Pending submission
                             </span>
                         )}
                     </div>
-                </div>
-
-                <div className="item-behavior">
-                    {mergeBehavior === 'OVERRIDE' && (
-                        <div className="behavior-warning">
-                            <span className="behavior-badge override">Override</span>
-                            <span className="behavior-text">
-                                New submission will <strong>replace</strong> the previous one
-                            </span>
-                        </div>
-                    )}
-                    {mergeBehavior === 'ADD_TO_EXISTING' && (
-                        <div className="behavior-info">
-                            <span className="behavior-badge additive">Additive</span>
-                            <span className="behavior-text">
-                                New submissions will be <strong>added</strong> to existing ones
-                            </span>
-                        </div>
-                    )}
                 </div>
 
                 {isSubmitted && submission.submitted_at && (
@@ -105,21 +183,7 @@ const SubmissionStatusCard = ({ submissionStatus, pollingUnitId, electionId }) =
                     </div>
                 )}
 
-                {submission.details && submission.details.length > 0 && type === 'votes' && (
-                    <div className="item-details">
-                        <div className="details-label">Current vote counts:</div>
-                        <div className="vote-details">
-                            {submission.details.map((detail, idx) => (
-                                <div key={idx} className="vote-detail">
-                                    <span className="party-name">{detail.party_acronym}</span>
-                                    <span className="vote-count">{detail.vote_count} votes</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {submission.count > 0 && submission.first_submitted_at && type !== 'votes' && (
+                {submission.count > 0 && submission.first_submitted_at && (
                     <div className="item-details">
                         <div className="details-timeline">
                             <span className="detail-first">
@@ -131,21 +195,6 @@ const SubmissionStatusCard = ({ submissionStatus, pollingUnitId, electionId }) =
                                 </span>
                             )}
                         </div>
-                    </div>
-                )}
-
-                {type === 'images' && submission.remaining < submission.max_allowed && (
-                    <div className="item-capacity">
-                        <div className="capacity-bar">
-                            <div
-                                className="capacity-fill"
-                                style={{ width: `${(submission.count / submission.max_allowed) * 100}%` }}
-                            ></div>
-                        </div>
-                        <span className="capacity-text">
-                            {submission.count}/{submission.max_allowed} slots used
-                            {submission.remaining > 0 && ` (${submission.remaining} remaining)`}
-                        </span>
                     </div>
                 )}
             </div>
@@ -160,40 +209,37 @@ const SubmissionStatusCard = ({ submissionStatus, pollingUnitId, electionId }) =
                         <BarChart3 size={24} />
                         <div>
                             <h3>Submission Status</h3>
-                            <p>What you've submitted for this election</p>
+                            <p>Status of each submission category</p>
                         </div>
                     </div>
                     <div className="header-summary">
-                        {Object.values(submission_summary).filter(Boolean).length === 0 ? (
+                        {!submissions.vote_counts?.submitted && !submissions.videos?.submitted && !submissions.comments?.submitted ? (
                             <span className="summary-text no-submissions">No submissions yet</span>
                         ) : (
                             <span className="summary-text has-submissions">
-                                {Object.values(submission_summary).filter(Boolean).length} of 4 categories submitted
+                                {[submissions.vote_counts?.submitted, submissions.videos?.submitted, submissions.comments?.submitted].filter(Boolean).length} of 3 categories submitted
                             </span>
                         )}
                     </div>
                 </div>
 
                 <div className="submissions-list">
-                    <SubmissionItem
-                        submission={submissions.vote_counts}
-                        title="Vote Counts"
-                        icon={BarChart3}
-                        type="votes"
+                    {/* Combined Vote Counts & EC8A Form Category */}
+                    <VoteAndImageItem
+                        voteSubmission={submissions.vote_counts}
+                        imageSubmission={submissions.images}
                     />
-                    <SubmissionItem
-                        submission={submissions.images}
-                        title="Photos"
-                        icon={ImageIcon}
-                        type="images"
-                    />
-                    <SubmissionItem
+
+                    {/* Videos Category */}
+                    <SimpleSubmissionItem
                         submission={submissions.videos}
                         title="Videos"
                         icon={Video}
                         type="videos"
                     />
-                    <SubmissionItem
+
+                    {/* Comments Category */}
+                    <SimpleSubmissionItem
                         submission={submissions.comments}
                         title="Comments"
                         icon={MessageSquare}
@@ -204,12 +250,16 @@ const SubmissionStatusCard = ({ submissionStatus, pollingUnitId, electionId }) =
                 <div className="card-footer">
                     <div className="legend">
                         <div className="legend-item">
-                            <span className="legend-color override"></span>
-                            <span>Override: Replaces previous submission</span>
+                            <span className="legend-color approved"></span>
+                            <span>Approved: Your submission has been reviewed and approved</span>
                         </div>
                         <div className="legend-item">
-                            <span className="legend-color additive"></span>
-                            <span>Additive: Adds to existing submissions</span>
+                            <span className="legend-color pending-approval"></span>
+                            <span>Pending Approval: Awaiting admin review</span>
+                        </div>
+                        <div className="legend-item">
+                            <span className="legend-color rejected"></span>
+                            <span>Rejected: Your submission was rejected. Click to view reason</span>
                         </div>
                     </div>
                 </div>
