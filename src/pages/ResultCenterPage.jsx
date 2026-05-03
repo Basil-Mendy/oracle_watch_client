@@ -139,6 +139,7 @@ const S = {
 /* ─── LGA horizontal stacked bar (pure SVG, no lib needed) ── */
 const LGAChart = ({ parties = [], lgas = [] }) => {
   const barH = 14, gap = 8, labelW = 110, chartW = 260, top = 20;
+  const minBarWidth = 2; // Minimum width for visibility
   const height = top + lgas.length * (barH + gap) + 10;
 
   // Find max total votes across all LGAs for consistent scaling
@@ -171,10 +172,14 @@ const LGAChart = ({ parties = [], lgas = [] }) => {
               textAnchor="end" fontSize={7} fill="#333">{lga.name}</text>
             {parties.map((p, pi) => {
               const votes = lga[p.acronym] || 0;
-              const w = (votes / maxTotal) * chartW;
+              let w = (votes / maxTotal) * chartW;
+              // Apply minimum width for visibility, unless votes is 0
+              if (votes > 0 && w < minBarWidth) {
+                w = minBarWidth;
+              }
               if (w > 0) {
                 return <rect key={p.acronym} x={x} y={y} width={w} height={barH}
-                  fill={colorFor(p.acronym, pi)} />;
+                  fill={colorFor(p.acronym, pi)} title={`${p.acronym}: ${votes}`} />;
               }
               x += w;
               return null;
@@ -187,10 +192,11 @@ const LGAChart = ({ parties = [], lgas = [] }) => {
 };
 
 /* ─── Main Component ───────────────────────────────────────── */
-const ResultCenterPage = () => {
+const ResultCenterPage = ({ embedMode = false, electionIdProp = null }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const electionId = searchParams.get('election');
+  const urlElectionId = searchParams.get('election');
+  const electionId = electionIdProp || urlElectionId;
   const { elections, lgas: lgaList, loadElections, loadLGAs, aggregateResults } = useElection();
 
   const [results, setResults] = useState(null);
@@ -501,11 +507,11 @@ const ResultCenterPage = () => {
   if (!electionsLoaded) {
     return (
       <div style={S.page}>
-        <Header />
+        {!embedMode && <Header />}
         <div style={{ padding: '4rem', textAlign: 'center', color: '#666' }}>
           Loading election data…
         </div>
-        <Footer />
+        {!embedMode && <Footer />}
       </div>
     );
   }
@@ -513,16 +519,16 @@ const ResultCenterPage = () => {
   if (!currentElection) {
     return (
       <div style={S.page}>
-        <Header />
+        {!embedMode && <Header />}
         <div style={{ padding: '4rem', textAlign: 'center' }}>
           <h2>Election Not Found</h2>
           <p style={{ margin: '1rem 0' }}>The election results you're looking for don't exist.</p>
-          <button onClick={() => navigate('/')}
+          <button onClick={() => embedMode ? window.history.back() : navigate('/')}
             style={{ padding: '8px 16px', background: '#1a2744', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer' }}>
-            ← Back to Home
+            ← {embedMode ? 'Back' : 'Back to Home'}
           </button>
         </div>
-        <Footer />
+        {!embedMode && <Footer />}
       </div>
     );
   }
@@ -530,10 +536,38 @@ const ResultCenterPage = () => {
   /* ─── Render ─────────────────────────────────────────────── */
   return (
     <div style={S.page}>
-      <Header />
+      {!embedMode && <Header />}
 
       {/* ── Hero bar ── */}
       <div style={S.hero}>
+        {embedMode && (
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: '#fff',
+              border: 'none',
+              borderRadius: 4,
+              padding: '8px 12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontWeight: 600,
+              color: '#1a2744',
+              fontSize: 14,
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f3f4f6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#fff';
+            }}
+            title="Back to elections"
+          >
+            ← Back
+          </button>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             background: '#fff', borderRadius: 4, padding: '4px 8px',
@@ -755,31 +789,64 @@ const ResultCenterPage = () => {
 
                     {expandedWard === ward.id && (
                       <div style={S.tableItemDropdown}>
-                        {ward.parties?.map((p, idx) => (
-                          <div key={p.id} style={S.tableItemDropdownParty}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-                              {p.logo_url ? (
-                                <img
-                                  src={p.logo_url}
-                                  alt={p.acronym}
-                                  style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
-                                  onError={(e) => { e.target.style.display = 'none'; }}
-                                />
-                              ) : (
-                                <div style={{
-                                  width: 20, height: 20, borderRadius: '50%',
-                                  background: colorFor(p.acronym, idx),
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: '#fff', fontSize: 10, fontWeight: 700, flexShrink: 0
-                                }}>
-                                  {p.acronym?.charAt(0)}
+                        {parties && parties.length > 0 ? (
+                          parties.map((p, idx) => {
+                            const wardParty = ward.parties?.find(wp => wp.id === p.id || wp.acronym === p.acronym);
+                            const votes = wardParty?.votes || 0;
+                            const logo = wardParty?.logo_url || p.logo_url;
+                            return (
+                              <div key={p.id} style={S.tableItemDropdownParty}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                                  {logo ? (
+                                    <img
+                                      src={logo}
+                                      alt={p.acronym}
+                                      style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                                      onError={(e) => { e.target.style.display = 'none'; }}
+                                    />
+                                  ) : (
+                                    <div style={{
+                                      width: 20, height: 20, borderRadius: '50%',
+                                      background: colorFor(p.acronym, idx),
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      color: '#fff', fontSize: 10, fontWeight: 700, flexShrink: 0
+                                    }}>
+                                      {p.acronym?.charAt(0)}
+                                    </div>
+                                  )}
+                                  <span style={{ fontWeight: 600, fontSize: 12 }}>{p.acronym}</span>
                                 </div>
-                              )}
-                              <span style={{ fontWeight: 600, fontSize: 12 }}>{p.acronym}</span>
+                                <span style={{ color: '#222', fontWeight: 700, minWidth: '60px', textAlign: 'right' }}>{votes.toLocaleString()}</span>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          ward.parties?.map((p, idx) => (
+                            <div key={p.id} style={S.tableItemDropdownParty}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                                {p.logo_url ? (
+                                  <img
+                                    src={p.logo_url}
+                                    alt={p.acronym}
+                                    style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <div style={{
+                                    width: 20, height: 20, borderRadius: '50%',
+                                    background: colorFor(p.acronym, idx),
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#fff', fontSize: 10, fontWeight: 700, flexShrink: 0
+                                  }}>
+                                    {p.acronym?.charAt(0)}
+                                  </div>
+                                )}
+                                <span style={{ fontWeight: 600, fontSize: 12 }}>{p.acronym}</span>
+                              </div>
+                              <span style={{ color: '#222', fontWeight: 700 }}>{(p.votes || 0).toLocaleString()}</span>
                             </div>
-                            <span style={{ color: '#222', fontWeight: 700 }}>{(p.votes || 0).toLocaleString()}</span>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     )}
                   </div>
@@ -853,31 +920,64 @@ const ResultCenterPage = () => {
 
                     {expandedPU === pu.id && (
                       <div style={S.tableItemDropdown}>
-                        {pu.parties?.map((p, idx) => (
-                          <div key={p.id} style={S.tableItemDropdownParty}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-                              {p.logo_url ? (
-                                <img
-                                  src={p.logo_url}
-                                  alt={p.acronym}
-                                  style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
-                                  onError={(e) => { e.target.style.display = 'none'; }}
-                                />
-                              ) : (
-                                <div style={{
-                                  width: 20, height: 20, borderRadius: '50%',
-                                  background: colorFor(p.acronym, idx),
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: '#fff', fontSize: 10, fontWeight: 700, flexShrink: 0
-                                }}>
-                                  {p.acronym?.charAt(0)}
+                        {parties && parties.length > 0 ? (
+                          parties.map((p, idx) => {
+                            const puParty = pu.parties?.find(pp => pp.id === p.id || pp.acronym === p.acronym);
+                            const votes = puParty?.votes || 0;
+                            const logo = puParty?.logo_url || p.logo_url;
+                            return (
+                              <div key={p.id} style={S.tableItemDropdownParty}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                                  {logo ? (
+                                    <img
+                                      src={logo}
+                                      alt={p.acronym}
+                                      style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                                      onError={(e) => { e.target.style.display = 'none'; }}
+                                    />
+                                  ) : (
+                                    <div style={{
+                                      width: 20, height: 20, borderRadius: '50%',
+                                      background: colorFor(p.acronym, idx),
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      color: '#fff', fontSize: 10, fontWeight: 700, flexShrink: 0
+                                    }}>
+                                      {p.acronym?.charAt(0)}
+                                    </div>
+                                  )}
+                                  <span style={{ fontWeight: 600, fontSize: 12 }}>{p.acronym}</span>
                                 </div>
-                              )}
-                              <span style={{ fontWeight: 600, fontSize: 12 }}>{p.acronym}</span>
+                                <span style={{ color: '#222', fontWeight: 700, minWidth: '60px', textAlign: 'right' }}>{votes.toLocaleString()}</span>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          pu.parties?.map((p, idx) => (
+                            <div key={p.id} style={S.tableItemDropdownParty}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                                {p.logo_url ? (
+                                  <img
+                                    src={p.logo_url}
+                                    alt={p.acronym}
+                                    style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                ) : (
+                                  <div style={{
+                                    width: 20, height: 20, borderRadius: '50%',
+                                    background: colorFor(p.acronym, idx),
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#fff', fontSize: 10, fontWeight: 700, flexShrink: 0
+                                  }}>
+                                    {p.acronym?.charAt(0)}
+                                  </div>
+                                )}
+                                <span style={{ fontWeight: 600, fontSize: 12 }}>{p.acronym}</span>
+                              </div>
+                              <span style={{ color: '#222', fontWeight: 700 }}>{(p.votes || 0).toLocaleString()}</span>
                             </div>
-                            <span style={{ color: '#222', fontWeight: 700 }}>{(p.votes || 0).toLocaleString()}</span>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
                     )}
                   </div>
@@ -887,7 +987,7 @@ const ResultCenterPage = () => {
         </div>
       </div>
 
-      <Footer />
+      {!embedMode && <Footer />}
     </div>
   );
 };

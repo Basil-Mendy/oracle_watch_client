@@ -62,22 +62,6 @@ const Header = () => {
                                 <span className="pu-icon"><MapPin size={16} /></span>
                                 <span className="pu-value">{user.lga_name || 'LGA'}</span>
                             </div>
-                            {/* Mobile Logout Button for Polling Unit */}
-                            <button
-                                className="btn btn-sm btn-outline-primary"
-                                onClick={handleLogout}
-                                style={{
-                                    padding: '0.35rem 0.7rem',
-                                    fontSize: '0.8rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    marginLeft: '8px'
-                                }}
-                                title="Logout"
-                            >
-                                <LogOut size={14} />
-                            </button>
                         </div>
                     )}
 

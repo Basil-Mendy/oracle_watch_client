@@ -29,6 +29,7 @@ const PollingUnitDashboard = () => {
     const [mediaSubmitting, setMediaSubmitting] = useState(false);
     const [liveStreamSubmitting, setLiveStreamSubmitting] = useState(false);
     const [voteSubmitted, setVoteSubmitted] = useState(false);
+    const [mediaSubmitted, setMediaSubmitted] = useState(false);
     const [commentSubmitted, setCommentSubmitted] = useState(false);
 
     // Network resilience states
@@ -520,10 +521,20 @@ const PollingUnitDashboard = () => {
                         <ArrowLeft size={20} />
                         Back to Elections
                     </button>
-                    <h1>{currentElection.name}</h1>
-                    <p className="detail-subtitle">
-                        {isActive ? <><Radio size={18} className="inline-icon" /> LIVE - Results Entry</> : <><Clock size={18} className="inline-icon" /> Election Not Started</>}
-                    </p>
+                    <div className="header-content-wrapper">
+                        <div className="header-titles">
+                            <h1>{currentElection.name}</h1>
+                            <p className="detail-subtitle">
+                                {isActive ? <><Radio size={18} className="inline-icon" /> LIVE - Results Entry</> : <><Clock size={18} className="inline-icon" /> Election Not Started</>}
+                            </p>
+                        </div>
+                        {user?.unit_id && (
+                            <div className="polling-unit-info">
+                                <p className="unit-label">Polling Unit</p>
+                                <p className="unit-id">ID: {user.unit_id}</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {message.text && (

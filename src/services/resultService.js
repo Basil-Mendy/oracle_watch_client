@@ -99,6 +99,19 @@ export const resultService = {
             duration_seconds: durationSeconds,
         }),
 
+    // Save video metadata after direct Cloudinary upload
+    saveVideoMetadata: (unitId, password, electionId, cloudinaryUrl, duration, metadata = {}, segmentId = null, isLiveStream = false) =>
+        api.post('/results/save-video-metadata/', {
+            unit_id: unitId,
+            password,
+            election_id: electionId,
+            cloudinary_url: cloudinaryUrl,
+            duration,
+            metadata,
+            segment_id: segmentId,
+            is_live_stream: isLiveStream,
+        }),
+
     // Public Result Retrieval
     getPollingUnitResults: (unitId, electionId) =>
         api.get(`/results/polling-unit/${unitId}/${electionId}/`),

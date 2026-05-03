@@ -3,7 +3,7 @@
  * Displays a single live stream in a CCTV-style grid card
  */
 import React, { useState } from 'react';
-import { Play, Phone, AlertCircle } from 'lucide-react';
+import { Play, AlertCircle } from 'lucide-react';
 
 export const LiveStreamCard = ({
   pollingUnitId,
@@ -14,7 +14,6 @@ export const LiveStreamCard = ({
   isLive,
   duration,
   onWatch,
-  onEnd,
   thumbnail,
 }) => {
   const [isHovering, setIsHovering] = useState(false);
@@ -36,7 +35,16 @@ export const LiveStreamCard = ({
           />
         ) : (
           <div style={styles.placeholderThumbnail}>
-            <AlertCircle size={32} color="#999" />
+            {/* Show fallback message when no stream URL available */}
+            <div style={styles.placeholderContent}>
+              <div style={styles.recordingDot} />
+              <p style={{ color: '#fff', fontSize: '13px', marginTop: '12px', fontWeight: '600' }}>
+                📹 RECORDING
+              </p>
+              <p style={{ color: '#aaa', fontSize: '11px', marginTop: '6px' }}>
+                Video available after recording ends
+              </p>
+            </div>
           </div>
         )}
 
@@ -94,17 +102,6 @@ export const LiveStreamCard = ({
             <span style={styles.statusBadge('offline')}>● Offline</span>
           )}
         </div>
-
-        {/* Action Button */}
-        {isLive && (
-          <button
-            onClick={() => onEnd?.(pollingUnitId)}
-            style={styles.endButton}
-          >
-            <Phone size={16} />
-            End Stream
-          </button>
-        )}
       </div>
     </div>
   );
@@ -150,6 +147,22 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  placeholderContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+
+  recordingDot: {
+    width: '12px',
+    height: '12px',
+    borderRadius: '50%',
+    backgroundColor: '#dc3545',
+    animation: 'pulse 1.5s infinite',
   },
 
   liveBadgeContainer: {
@@ -259,23 +272,6 @@ const styles = {
     color: status === 'live' ? '#dc3545' : '#6c757d',
     fontWeight: '600',
   }),
-
-  endButton: {
-    width: '100%',
-    padding: '8px 12px',
-    backgroundColor: '#dc3545',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    transition: 'background-color 0.3s ease',
-  },
 };
 
 export default LiveStreamCard;

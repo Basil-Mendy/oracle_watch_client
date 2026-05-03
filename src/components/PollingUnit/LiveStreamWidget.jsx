@@ -24,8 +24,6 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
     const [videoSubmitMessage, setVideoSubmitMessage] = useState('');
     const [cameraFacing, setCameraFacing] = useState('user'); // 'user' or 'environment'
     const [liveStreamSessionId, setLiveStreamSessionId] = useState(null); // Track live stream session
-    const photoCanvasRef = useRef(null);
-    const [capturedPhotos, setCapturedPhotos] = useState([]);
 
     // Refs for stream management
     const timerInterval = useRef(null);
@@ -34,6 +32,8 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
     const mediaRecorder = useRef(null);
     const recordedChunks = useRef([]);
     const fileInputRef = useRef(null);
+    const isStoppingRef = useRef(false); // Guard against multiple stop calls
+    const broadcasterRef = useRef(null); // WebRTC broadcaster for live streaming
 
     // Simulate stream timer
     useEffect(() => {
@@ -154,6 +154,44 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
 
             mediaRecorder.current.start(1000);
             console.log('Recording started, will collect data every 1 second');
+
+            // START WEBRTC STREAMING to admin dashboard (NEW)
+            try {
+                console.log('🎥 Initializing WebRTC streaming...');
+                const { LiveStreamManager } = await import('../../services/WebRTCStreamingService.js');
+
+                const broadcaster = new LiveStreamManager(
+                    user.unit_id || pollingUnitId,
+                    password,
+                    electionId,
+                    {
+                        onLocalStream: (stream) => {
+                            console.log('✅ WebRTC local stream initialized');
+                        },
+                        onStreamStart: () => {
+                            console.log('🎬 LIVE STREAMING STARTED - admins can now watch in real-time');
+                        },
+                        onError: (err) => {
+                            console.error('⚠️ WebRTC streaming error:', err.message);
+                            setError(`Stream note: ${err.message}. Recording continues locally.`);
+                        },
+                        onStats: (stats) => {
+                            console.log('📊 Stream quality:', {
+                                bitrate: stats.bitrate,
+                                fps: stats.fps,
+                                resolution: stats.resolution,
+                                latency: stats.latency
+                            });
+                        }
+                    }
+                );
+
+                broadcasterRef.current = broadcaster;
+                await broadcaster.startStreaming();
+            } catch (err) {
+                console.warn('⚠️ WebRTC streaming not available:', err.message);
+            }
+
             setIsLive(true);
         } catch (err) {
             console.error('Error in handleStartLive:', err);
@@ -182,8 +220,27 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
     };
 
     const handleStopLive = async () => {
+        // Guard against multiple calls
+        if (isStoppingRef.current) {
+            console.log('Stop already in progress, ignoring duplicate call');
+            return;
+        }
+        isStoppingRef.current = true;
+
         try {
             const password = sessionStorage.getItem('polling_unit_password');
+
+            // STOP WEBRTC STREAMING (NEW)
+            if (broadcasterRef.current) {
+                try {
+                    console.log('🛑 Stopping WebRTC streaming...');
+                    broadcasterRef.current.stopStreaming();
+                    console.log('✅ WebRTC streaming stopped');
+                } catch (err) {
+                    console.error('⚠️ Error stopping WebRTC stream:', err.message);
+                }
+                broadcasterRef.current = null;
+            }
 
             // End the live stream session on backend
             if (liveStreamSessionId && password) {
@@ -271,6 +328,8 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
             console.error('Error stopping stream:', err);
             setError('Error stopping stream: ' + err.message);
             setLiveStreamSessionId(null);
+        } finally {
+            isStoppingRef.current = false; // Reset guard flag
         }
     };
 
@@ -328,91 +387,6 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
         } catch (err) {
             setError(`Error switching camera: ${err.message}`);
             console.error('Camera switch error:', err);
-        }
-    };
-
-    const handleCapturePhoto = () => {
-        try {
-            if (!videoRef.current || !isLive) {
-                setError('Start streaming first before taking photos');
-                return;
-            }
-
-            const canvas = photoCanvasRef.current;
-            if (!canvas) return;
-
-            const ctx = canvas.getContext('2d');
-            const video = videoRef.current;
-
-            // Set canvas size to match video
-            canvas.width = video.videoWidth || 1280;
-            canvas.height = video.videoHeight || 720;
-
-            // Draw current video frame to canvas
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Convert canvas to blob
-            canvas.toBlob((blob) => {
-                if (blob && blob.size > 0) {
-                    const timestamp = new Date().toLocaleTimeString();
-                    const photo = {
-                        id: Math.random().toString(36).substr(2, 9),
-                        timestamp,
-                        blob,
-                        size: (blob.size / 1024).toFixed(2)
-                    };
-
-                    setCapturedPhotos(prev => [photo, ...prev]);
-                    setError('');
-                    console.log(`✓ Photo captured (${photo.size} KB)`);
-                } else {
-                    setError('Failed to capture photo');
-                }
-            }, 'image/jpeg', 0.95);
-        } catch (err) {
-            setError(`Error capturing photo: ${err.message}`);
-            console.error('Photo capture error:', err);
-        }
-    };
-
-    const handleDownloadPhoto = (photo) => {
-        const url = URL.createObjectURL(photo.blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `photo_${photo.id}.jpg`;
-        a.click();
-        URL.revokeObjectURL(url);
-    };
-
-    const handleUploadPhotos = async () => {
-        if (capturedPhotos.length === 0) {
-            setError('No photos to upload');
-            return;
-        }
-
-        setSubmittingVideos(true);
-        try {
-            const password = sessionStorage.getItem('polling_unit_password');
-            const unitId = user?.unit_id;
-
-            if (!password || !unitId || !electionId) {
-                throw new Error('Missing credentials or election');
-            }
-
-            // Upload each captured photo
-            for (const photo of capturedPhotos) {
-                const file = new File([photo.blob], `photo_${photo.id}.jpg`, { type: 'image/jpeg' });
-                await resultService.uploadMedia(unitId, password, electionId, file, 'image');
-            }
-
-            setVideoSubmitMessage({ type: 'success', text: `${capturedPhotos.length} photo(s) uploaded successfully!` });
-            setCapturedPhotos([]);
-            setTimeout(() => setVideoSubmitMessage(''), 3000);
-        } catch (error) {
-            console.error('Photo upload error:', error);
-            setError(`Failed to upload photos: ${error.message}`);
-        } finally {
-            setSubmittingVideos(false);
         }
     };
 
@@ -489,7 +463,25 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
             // Upload each pre-recorded video
             for (const video of preRecordedVideos) {
                 if (video.file) {
-                    await resultService.uploadMedia(user.unit_id, password, electionId, video.file, 'video');
+                    const uploadResponse = await resultService.uploadMedia(user.unit_id, password, electionId, video.file, 'video');
+
+                    // Save metadata for pre-recorded videos too
+                    if (uploadResponse.data?.video) {
+                        try {
+                            await resultService.saveVideoMetadata(
+                                user.unit_id,
+                                password,
+                                electionId,
+                                uploadResponse.data.video.cloudinary_url || null,
+                                video.duration || (video.file.size / 250000),
+                                { size: video.file.size, mimeType: video.file.type },
+                                null,
+                                false
+                            );
+                        } catch (e) {
+                            console.warn('Failed to save pre-recorded video metadata:', e);
+                        }
+                    }
                 }
             }
 
@@ -555,8 +547,41 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
 
                     const file = new File([stream.blob], `stream_${stream.id}.webm`, { type: 'video/webm' });
                     console.log(`📤 Uploading: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
-                    await resultService.uploadMedia(unitId, password, electionId, file, 'video');
-                    console.log(`✅ Stream uploaded successfully`);
+
+                    const uploadResponse = await resultService.uploadMedia(unitId, password, electionId, file, 'video');
+                    console.log(`✅ Stream uploaded successfully`, uploadResponse.data);
+
+                    // SAVE VIDEO METADATA to database after upload
+                    // This ensures the video appears in admin dashboard
+                    if (uploadResponse.data?.video) {
+                        const videoData = uploadResponse.data.video;
+                        console.log(`📝 Saving video metadata to database...`, videoData);
+
+                        try {
+                            // Calculate duration from stream
+                            const estimatedDurationMs = stream.duration || (file.size / 250000); // ~250KB per second estimate
+
+                            await resultService.saveVideoMetadata(
+                                unitId,
+                                password,
+                                electionId,
+                                videoData.cloudinary_url || null, // Can be null - will use local storage
+                                estimatedDurationMs,
+                                {
+                                    size: file.size,
+                                    codec: 'vp9',
+                                    mimeType: 'video/webm',
+                                    resolution: '1280x720'
+                                },
+                                stream.id, // segment_id
+                                false // is_live_stream
+                            );
+                            console.log(`✅ Video metadata saved to database - video now visible in admin dashboard`);
+                        } catch (metadataError) {
+                            console.warn(`⚠️ Failed to save video metadata (but upload succeeded):`, metadataError);
+                            // Don't throw - upload already succeeded
+                        }
+                    }
                 }
             }
 
@@ -644,10 +669,6 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
                         playsInline
                         className="video-preview"
                     />
-                    <canvas
-                        ref={photoCanvasRef}
-                        style={{ display: 'none' }}
-                    />
                     <div className="video-overlay">
                         <div className="overlay-badge" style={{ color: '#dc3545', fontWeight: 'bold' }}>🔴 BROADCASTING</div>
                         <div className="overlay-info">
@@ -655,7 +676,7 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
                         </div>
                     </div>
 
-                    {/* Camera & Photo Controls */}
+                    {/* Camera Controls */}
                     <div style={{
                         position: 'absolute',
                         bottom: '12px',
@@ -684,26 +705,6 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
                             }}
                         >
                             🔄 Switch Camera
-                        </button>
-                        <button
-                            className="btn btn-sm"
-                            onClick={handleCapturePhoto}
-                            title="Take a photo from the live stream"
-                            style={{
-                                padding: '8px 12px',
-                                backgroundColor: '#ffc107',
-                                color: '#000',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '12px',
-                                fontWeight: 600
-                            }}
-                        >
-                            📷 Take Photo
                         </button>
                     </div>
                 </div>
@@ -801,117 +802,6 @@ const LiveStreamWidget = ({ electionId, pollingUnitId }) => {
                             <>
                                 <Upload size={16} />
                                 Submit {savedStreams.length} Stream{savedStreams.length > 1 ? 's' : ''}
-                            </>
-                        )}
-                    </button>
-                </div>
-            )}
-
-            {/* Captured Photos Section */}
-            {capturedPhotos.length > 0 && (
-                <div className="captured-photos-section" style={{ marginTop: '24px', padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '6px', border: '1px solid #e0e0e0' }}>
-                    <h5 style={{ margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        📷 Captured Photos ({capturedPhotos.length})
-                    </h5>
-                    <p style={{ fontSize: '12px', color: '#7f8c8d', margin: '0 0 12px 0' }}>
-                        Photos captured during live streaming can be downloaded or uploaded directly
-                    </p>
-
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
-                        gap: '12px',
-                        marginBottom: '12px'
-                    }}>
-                        {capturedPhotos.map((photo, idx) => (
-                            <div
-                                key={photo.id}
-                                style={{
-                                    position: 'relative',
-                                    borderRadius: '6px',
-                                    overflow: 'hidden',
-                                    backgroundColor: '#e0e0e0',
-                                    aspectRatio: '1',
-                                    border: '1px solid #ccc'
-                                }}
-                            >
-                                <img
-                                    src={URL.createObjectURL(photo.blob)}
-                                    alt={`Photo ${idx + 1}`}
-                                    style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        objectFit: 'cover'
-                                    }}
-                                />
-                                <div style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    left: 0,
-                                    display: 'flex',
-                                    gap: '4px',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    opacity: 0,
-                                    backgroundColor: 'rgba(0,0,0,0.5)',
-                                    transition: 'opacity 0.3s'
-                                }}
-                                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDownloadPhoto(photo)}
-                                        style={{
-                                            padding: '4px 8px',
-                                            backgroundColor: '#17a2b8',
-                                            color: '#fff',
-                                            border: 'none',
-                                            borderRadius: '3px',
-                                            fontSize: '11px',
-                                            cursor: 'pointer'
-                                        }}
-                                        title="Download photo"
-                                    >
-                                        ⬇
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    <button
-                        type="button"
-                        className="btn btn-success"
-                        onClick={handleUploadPhotos}
-                        disabled={submittingVideos}
-                        style={{
-                            width: '100%',
-                            padding: '12px',
-                            backgroundColor: submittingVideos ? '#ccc' : '#28a745',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: submittingVideos ? 'not-allowed' : 'pointer',
-                            opacity: submittingVideos ? 0.6 : 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            fontWeight: 600
-                        }}
-                    >
-                        {submittingVideos ? (
-                            <>
-                                <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                                Uploading Photos...
-                            </>
-                        ) : (
-                            <>
-                                <Upload size={16} />
-                                Upload {capturedPhotos.length} Photo{capturedPhotos.length > 1 ? 's' : ''} as Submission
                             </>
                         )}
                     </button>
