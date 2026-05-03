@@ -213,14 +213,13 @@ class LiveStreamManager {
 
         // Connection state monitoring
         this.peerConnection.onconnectionstatechange = () => {
-        }
-    };
-}
+        };
+    }
 
-/**
- * Monitor streaming quality metrics
- */
-startStatsMonitoring() {
+    /**
+     * Monitor streaming quality metrics
+     */
+    startStatsMonitoring() {
     this.statsInterval = setInterval(async () => {
         if (!this.peerConnection) return;
 
@@ -243,20 +242,20 @@ startStatsMonitoring() {
 
         this.onStats({ videoBitrate, videoResolution, frameRate });
     }, 1000);
-}
+    }
 
-/**
- * Stop streaming and clean up
- */
-stopStreaming() {
-    if (this.statsInterval) clearInterval(this.statsInterval);
-    if (this.localStream) this.localStream.getTracks().forEach(t => t.stop());
-    if (this.peerConnection) this.peerConnection.close();
-    if (this.signalingSocket) this.signalingSocket.close();
+    /**
+     * Stop streaming and clean up
+     */
+    stopStreaming() {
+        if (this.statsInterval) clearInterval(this.statsInterval);
+        if (this.localStream) this.localStream.getTracks().forEach(t => t.stop());
+        if (this.peerConnection) this.peerConnection.close();
+        if (this.signalingSocket) this.signalingSocket.close();
 
-    this.isStreaming = false;
-    this.onStreamEnd();
-}
+        this.isStreaming = false;
+        this.onStreamEnd();
+    }
 }
 
 // ============================================================================
@@ -354,27 +353,28 @@ class AdminStreamViewer {
                         reject(new Error(message.error));
                     } else if (message.type === 'offer') {
                         // Received offer from broadcaster
-                        const offer = {
-                            type: 'offer',
-                            sdp: message.sdp
-                        };
+                        try {
+                            const offer = {
+                                type: 'offer',
+                                sdp: message.sdp
+                            };
 
-                        await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
 
-                        const answer = await this.peerConnection.createAnswer();
+                            const answer = await this.peerConnection.createAnswer();
 
-                        await this.peerConnection.setLocalDescription(answer);
+                            await this.peerConnection.setLocalDescription(answer);
 
-                        // Send answer back to broadcaster
-                        this.signalingSocket.send(JSON.stringify({
-                            type: 'answer',
-                            sessionId: this.sessionId,
-                            sdp: answer.sdp
-                        }));
-                    } catch (err) {
-                        this.onError(err);
-                    }
-                } else if (message.type === 'ice_candidate') {
+                            // Send answer back to broadcaster
+                            this.signalingSocket.send(JSON.stringify({
+                                type: 'answer',
+                                sessionId: this.sessionId,
+                                sdp: answer.sdp
+                            }));
+                        } catch (err) {
+                            this.onError(err);
+                        }
+                    } else if (message.type === 'ice_candidate') {
                     // Received ICE candidate from broadcaster
                     try {
                         if (message.candidate) {
@@ -398,77 +398,77 @@ class AdminStreamViewer {
     });
 }
 
-/**
- * Create peer connection for viewing
- */
-createPeerConnection() {
-    const config = {
-        iceServers: [
-            { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }
-        ]
-    };
+    /**
+     * Create peer connection for viewing
+     */
+    createPeerConnection() {
+        const config = {
+            iceServers: [
+                { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }
+            ]
+        };
 
-    this.peerConnection = new RTCPeerConnection(config);
+        this.peerConnection = new RTCPeerConnection(config);
 
-    // Send ICE candidates to broadcaster
-    this.peerConnection.onicecandidate = (event) => {
-        if (event.candidate && this.signalingSocket?.readyState === WebSocket.OPEN) {
-            this.signalingSocket.send(JSON.stringify({
-                type: 'ice_candidate',
-                sessionId: this.sessionId,
-                candidate: event.candidate
-            }));
-        }
-    };
-
-    // Connection state monitoring
-    this.peerConnection.onconnectionstatechange = () => {
-        console.log('📡 Viewer connection state:', this.peerConnection.connectionState);
-    };
-}
-
-/**
- * Monitor stream quality
- */
-startStatsMonitoring() {
-    this.statsInterval = setInterval(async () => {
-        if (!this.peerConnection) return;
-
-        const stats = await this.peerConnection.getStats();
-        let videoBitrate = 0;
-        let videoResolution = '0x0';
-        let frameRate = 0;
-        let latency = 0;
-
-        stats.forEach(report => {
-            if (report.type === 'inbound-rtp' && report.kind === 'video') {
-                const bitrate = (report.bytesReceived - (this.lastBytesReceived || 0)) * 8 / 1000;
-                videoBitrate = Math.round(bitrate);
-                frameRate = report.framesDecoded ? Math.round(report.framesDecoded / 30) : 0;
-                videoResolution = `${report.frameWidth}x${report.frameHeight}`;
-                this.lastBytesReceived = report.bytesReceived;
+        // Send ICE candidates to broadcaster
+        this.peerConnection.onicecandidate = (event) => {
+            if (event.candidate && this.signalingSocket?.readyState === WebSocket.OPEN) {
+                this.signalingSocket.send(JSON.stringify({
+                    type: 'ice_candidate',
+                    sessionId: this.sessionId,
+                    candidate: event.candidate
+                }));
             }
-            if (report.type === 'candidate-pair' && report.state === 'succeeded') {
-                latency = Math.round(report.currentRoundTripTime * 1000);
-            }
-        });
+        };
 
-        this.onStats({ videoBitrate, videoResolution, frameRate, latency });
-    }, 1000);
-}
+        // Connection state monitoring
+        this.peerConnection.onconnectionstatechange = () => {
+            console.log('📡 Viewer connection state:', this.peerConnection.connectionState);
+        };
+    }
 
-/**
- * Stop watching stream
- */
-stopWatching() {
-    console.log('🛑 Stopping viewer...');
+    /**
+     * Monitor stream quality
+     */
+    startStatsMonitoring() {
+        this.statsInterval = setInterval(async () => {
+            if (!this.peerConnection) return;
 
-    if (this.statsInterval) clearInterval(this.statsInterval);
-    if (this.peerConnection) this.peerConnection.close();
-    if (this.signalingSocket) this.signalingSocket.close();
+            const stats = await this.peerConnection.getStats();
+            let videoBitrate = 0;
+            let videoResolution = '0x0';
+            let frameRate = 0;
+            let latency = 0;
 
-    this.isWatching = false;
-}
+            stats.forEach(report => {
+                if (report.type === 'inbound-rtp' && report.kind === 'video') {
+                    const bitrate = (report.bytesReceived - (this.lastBytesReceived || 0)) * 8 / 1000;
+                    videoBitrate = Math.round(bitrate);
+                    frameRate = report.framesDecoded ? Math.round(report.framesDecoded / 30) : 0;
+                    videoResolution = `${report.frameWidth}x${report.frameHeight}`;
+                    this.lastBytesReceived = report.bytesReceived;
+                }
+                if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                    latency = Math.round(report.currentRoundTripTime * 1000);
+                }
+            });
+
+            this.onStats({ videoBitrate, videoResolution, frameRate, latency });
+        }, 1000);
+    }
+
+    /**
+     * Stop watching stream
+     */
+    stopWatching() {
+        console.log('🛑 Stopping viewer...');
+
+        if (this.statsInterval) clearInterval(this.statsInterval);
+        if (this.peerConnection) this.peerConnection.close();
+        if (this.signalingSocket) this.signalingSocket.close();
+
+        this.isWatching = false;
+    }
 }
 
 export { LiveStreamManager, AdminStreamViewer };
